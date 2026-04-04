@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Pizzeria Pro - tuoreet pizzat, nopea toimitus ja lämmin tunnelma."
+    />
+    <link rel="stylesheet" href="../css/main_style.css" />
+    <title>Pizzeria Pro</title>
+  </head>
+  <body>
+    <header class="hero">
+      <nav class="topbar" aria-label="Päävalikko">
+        <a class="brand" href="#etusivu">Pizzeria Pro</a>
+        <div class="topbar__links">
+          <a href="./menu_page.html">Menu</a>
+          <a href="#tarjoukset">Tarjoukset</a>
+          <a href="#sijainti">Sijainti</a>
+        </div>
+      </nav>
+
+      <section class="hero__content" id="etusivu">
+        <div
+          class="hero__title-banner"
+          role="img"
+          aria-label="Tuore pizza puupöydällä"
+        >
+          <h1>Pizzaa, joka maistuu oikeasti italialaiselta.</h1>
+        </div>
+        <p class="hero__text">
+          Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet.
+          Tilaa nouto, kotiinkuljetus tai tule syömään paikan päälle.
+        </p>
+        <div class="hero__actions">
+          <a class="button button--primary" href="./menu_page.html"
+            >Katso menu</a
+          >
+          <a class="button button--secondary" href="#sijainti">Aukioloajat</a>
+        </div>
+        <ul class="hero__stats" aria-label="Pizzeria Pro - nopea yhteenveto">
+          <li><strong>30 min</strong><span>Keskimääräinen toimitus</span></li>
+          <li><strong>24/7</strong><span>Verkkotilaus auki</span></li>
+          <li><strong>4.8/5</strong><span>Asiakastyytyväisyys</span></li>
+        </ul>
+      </section>
+    </header>
+
+    <main>
+      <section class="section section--feature" id="tarjoukset">
+        <div>
+          <p class="section__label">Tämän viikon tarjous</p>
+          <h2>Kaksi suosikkia yhdellä hinnalla</h2>
+          <p>
+            Tilaa Margherita ja Pepperoni yhdessä, niin saat toisen juoman
+            veloituksetta. Tarjous koskee nouto- ja verkkotilauksia.
+          </p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-card__badge">-15%</span>
+          <h3>Pizzeria Pro Duo</h3>
+          <p>Kaksi pizzaa, kaksi juomaa ja valkosipulidippi.</p>
+        </div>
+      </section>
+
+      <section class="section" id="menu">
+        <div class="section__heading">
+          <p class="section__label">Suosituimmat</p>
+          <h2>Valmiit klassikot</h2>
+          <p>
+            <a class="inline-link" href="./menu_page.html">Avaa koko menu -></a>
+          </p>
+        </div>
+
+        <div class="menu-grid">
+          <article class="menu-card">
+            <h3>Margherita</h3>
+            <p>Tomaatti, mozzarella, basilika ja oliiviöljy.</p>
+            <span>9,90 €</span>
+          </article>
+          <article class="menu-card">
+            <h3>Pepperoni</h3>
+            <p>Rohkea, tulinen ja juuri sopivasti mausteinen.</p>
+            <span>11,50 €</span>
+          </article>
+          <article class="menu-card">
+            <h3>Quattro Formaggi</h3>
+            <p>Neljä juustoa ja pehmeä, täyteläinen maku.</p>
+            <span>12,90 €</span>
+          </article>
+          <article class="menu-card">
+            <h3>Chicken BBQ</h3>
+            <p>Kana, BBQ-kastike, punasipuli ja mozzarella.</p>
+            <span>12,50 €</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="section info-grid" id="sijainti">
+        <article class="info-card">
+          <p class="section__label">Aukioloajat</p>
+          <h2>Olemme auki joka päivä</h2>
+          <p>Ma-To 11:00-21:00</p>
+          <p>Pe-La 11:00-23:00</p>
+          <p>Su 12:00-20:00</p>
+        </article>
+
+        <article class="info-card info-card--dark">
+          <p class="section__label">Sijainti</p>
+          <h2>Keskustassa, lähellä kaikkea</h2>
+          <p>Keskuskatu 12, 00100 Helsinki</p>
+          <p>Puh. 010 123 4567</p>
+          <p>Sähköposti: tilaukset@pizzeriapro.fi</p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
