@@ -1,0 +1,67 @@
+{
+  "week": "2026-W17",
+  "days": [
+    {
+      "dayId": "2026-04-20",
+      "date": "2026-04-20",
+      "items": [
+        {
+          "itemId": "kana-pizza-2026-04-20",
+          "name": "Kana-pizza",
+          "description": "Kana, mozzarella, punasipuli ja talon tomaattikastike.",
+          "priceCents": 1250,
+          "currency": "EUR",
+          "diet": ["L"],
+          "mealType": "lunch",
+          "image": "/src/assets/images/pizza-chicken-bbq.jpg"
+        },
+        {
+          "itemId": "kasvispizza-2026-04-20",
+          "name": "Kasvispizza",
+          "description": "Paprika, herkkusieni, oliivi, sipuli ja mozzarella.",
+          "priceCents": 1050,
+          "currency": "EUR",
+          "diet": ["VEG", "G"],
+          "mealType": "lunch",
+          "image": "/src/assets/images/pizza-vegetariana.jpg"
+        },
+        {
+          "itemId": "diavola-2026-04-20",
+          "name": "Diavola",
+          "description": "Salami piccante, chili ja mozzarella.",
+          "priceCents": 1320,
+          "currency": "EUR",
+          "diet": [],
+          "mealType": "a_la_carte",
+          "image": "/src/assets/images/pizza-diavola.jpg"
+        }
+      ]
+    },
+    {
+      "dayId": "2026-04-21",
+      "date": "2026-04-21",
+      "items": [
+        {
+          "itemId": "tonno-2026-04-21",
+          "name": "Tonno",
+          "description": "Tonnikala, kapris ja punasipuli.",
+          "priceCents": 1280,
+          "currency": "EUR",
+          "diet": ["L"],
+          "mealType": "a_la_carte",
+          "image": "/src/assets/images/pizza-tonno.jpg"
+        },
+        {
+          "itemId": "margherita-2026-04-21",
+          "name": "Margherita",
+          "description": "Tomaatti, mozzarella ja basilika.",
+          "priceCents": 990,
+          "currency": "EUR",
+          "diet": ["VEG"],
+          "mealType": "lunch",
+          "image": "/src/assets/images/pizza-margherita.jpg"
+        }
+      ]
+    }
+  ]
+}

@@ -9,7 +9,7 @@ function PizzaCard({pizza}) {
         <p>{pizza.description}</p>
         <div className="pizza-card__meta">
           <span>{pizza.tag}</span>
-          <span className="pizza-card__price">{pizza.price} €</span>
+          <span className="pizza-card__price">{pizza.price}</span>
         </div>
       </div>
     </article>
