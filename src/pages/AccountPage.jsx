@@ -1,0 +1,260 @@
+import {useEffect, useMemo, useState} from 'react';
+import {Link} from 'react-router-dom';
+import Navigation from '../components/Navigation';
+import {
+  getCurrentCustomer,
+  loginCustomer,
+  logoutCustomer,
+  registerCustomer,
+} from '../utils/customerAuth';
+import '../css/auth_style.css';
+
+const initialFormState = {
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+};
+
+function AccountPage() {
+  const [mode, setMode] = useState('login');
+  const [formData, setFormData] = useState(initialFormState);
+  const [currentCustomer, setCurrentCustomer] = useState(() =>
+    getCurrentCustomer()
+  );
+  const [feedback, setFeedback] = useState({type: '', message: ''});
+
+  const isRegistration = mode === 'register';
+
+  const title = useMemo(
+    () =>
+      isRegistration
+        ? 'Luo asiakastili nopeaa tilaamista varten.'
+        : 'Kirjaudu sisään',
+    [isRegistration]
+  );
+
+  useEffect(() => {
+    setCurrentCustomer(getCurrentCustomer());
+  }, []);
+
+  function resetFeedback() {
+    setFeedback({type: '', message: ''});
+  }
+
+  function handleChange(event) {
+    const {name, value} = event.target;
+
+    setFormData(previous => ({
+      ...previous,
+      [name]: value,
+    }));
+  }
+
+  function handleModeChange(nextMode) {
+    setMode(nextMode);
+    resetFeedback();
+    setFormData(initialFormState);
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    if (isRegistration) {
+      const result = registerCustomer({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      });
+
+      if (!result.ok) {
+        setFeedback({type: 'error', message: result.message});
+        return;
+      }
+
+      setCurrentCustomer(result.customer);
+      setFeedback({
+        type: 'success',
+        message: 'Tili luotu onnistuneesti. Voit nyt kirjautua sisään.',
+      });
+      setFormData(initialFormState);
+      setMode('login');
+      return;
+    }
+
+    const result = loginCustomer({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (!result.ok) {
+      setFeedback({type: 'error', message: result.message});
+      return;
+    }
+
+    setCurrentCustomer(result.customer);
+    setFeedback({type: 'success', message: 'Kirjautuminen onnistui.'});
+    setFormData(initialFormState);
+  }
+
+  function handleLogout() {
+    logoutCustomer();
+    setCurrentCustomer(null);
+    setFeedback({type: 'success', message: 'Olet kirjautunut ulos.'});
+  }
+
+  return (
+    <div className="account-page">
+      <header className="hero hero--account">
+        <Navigation />
+
+        <section className="hero__content account-hero" id="kirjautuminen">
+          <p className="eyebrow">Asiakastili</p>
+          <h1>{title}</h1>
+          <h2 className="hero__text account-hero__text">
+            ja jatka tilausta siitä mihin jäit.
+          </h2>
+        </section>
+      </header>
+
+      <main className="account-layout">
+        <section className="account-panel account-panel--form">
+          <div className="account-panel__tabs" role="tablist" aria-label="Tili">
+            <button
+              type="button"
+              className={`tab-button${isRegistration ? '' : ' tab-button--active'}`}
+              onClick={() => handleModeChange('login')}
+            >
+              Kirjaudu
+            </button>
+            <button
+              type="button"
+              className={`tab-button${isRegistration ? ' tab-button--active' : ''}`}
+              onClick={() => handleModeChange('register')}
+            >
+              Rekisteröidy
+            </button>
+          </div>
+
+          <form className="account-form" onSubmit={handleSubmit}>
+            {isRegistration && (
+              <label className="field">
+                <span>Nimi</span>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Etunimi Sukunimi"
+                  autoComplete="name"
+                />
+              </label>
+            )}
+
+            <label className="field">
+              <span>Sähköposti</span>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="asiakas@esimerkki.fi"
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label className="field">
+              <span>Salasana</span>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Vähintään 6 merkkiä"
+                autoComplete={
+                  isRegistration ? 'new-password' : 'current-password'
+                }
+                required
+              />
+            </label>
+
+            {isRegistration && (
+              <label className="field">
+                <span>Vahvista salasana</span>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Kirjoita salasana uudelleen"
+                  autoComplete="new-password"
+                  required
+                />
+              </label>
+            )}
+
+            {feedback.message && (
+              <p
+                className={`feedback feedback--${feedback.type}`}
+                role="status"
+              >
+                {feedback.message}
+              </p>
+            )}
+
+            <button
+              className="button button--primary account-form__submit"
+              type="submit"
+            >
+              {isRegistration ? 'Luo tili' : 'Kirjaudu sisään'}
+            </button>
+          </form>
+        </section>
+
+        <aside className="account-panel account-panel--summary">
+          <p className="section__label">Tila</p>
+          <h2>Asiakastilin yhteenveto</h2>
+
+          {currentCustomer ? (
+            <div className="session-card">
+              <p>
+                <strong>Kirjautunut käyttäjä:</strong> {currentCustomer.name}
+              </p>
+              <p>
+                <strong>Sähköposti:</strong> {currentCustomer.email}
+              </p>
+              <p>
+                Tilitiedot säilyvät tässä vaiheessa paikallisesti selaimessa.
+                Varsinainen API voidaan liittää tähän myöhemmin.
+              </p>
+              <button
+                type="button"
+                className="button button--secondary session-card__button"
+                onClick={handleLogout}
+              >
+                Kirjaudu ulos
+              </button>
+            </div>
+          ) : (
+            <div className="session-card">
+              <p>
+                Kirjautumalla asiakas voi myöhemmin hyödyntää nopeaa tilaamista,
+                tilahistoriaa ja ostoskoria.
+              </p>
+              <p>
+                <Link className="inline-link" to="/menu">
+                  Siirry ruokalistaan
+                </Link>{' '}
+                ja palaa sitten takaisin jatkamaan kirjautumista.
+              </p>
+            </div>
+          )}
+        </aside>
+      </main>
+    </div>
+  );
+}
+
+export default AccountPage;
