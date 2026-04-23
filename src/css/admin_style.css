@@ -1,0 +1,121 @@
+.hero--admin {
+  min-height: auto;
+  padding-bottom: 28px;
+}
+
+.admin-hero {
+  gap: 18px;
+}
+
+.admin-hero__text {
+  max-width: 66ch;
+}
+
+.admin-layout {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 56px) 56px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px;
+}
+
+.admin-panel {
+  border: 1px solid rgba(206, 141, 103, 0.34);
+  background: rgba(255, 251, 245, 0.84);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 18px 45px rgba(150, 96, 61, 0.08);
+}
+
+.admin-panel--summary {
+  display: grid;
+  gap: 14px;
+}
+
+.json-editor {
+  width: 100%;
+  min-height: 540px;
+  margin-top: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(171, 105, 66, 0.32);
+  background: rgba(16, 12, 10, 0.96);
+  color: #f8eadf;
+  padding: 18px;
+  font-family: Consolas, 'Courier New', monospace;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.admin-message {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-weight: 600;
+}
+
+.admin-message--success {
+  background: rgba(229, 247, 233, 0.96);
+  color: #2f6a38;
+}
+
+.admin-message--error {
+  background: rgba(255, 225, 221, 0.96);
+  color: #8f2f24;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.admin-preview {
+  display: grid;
+  gap: 12px;
+  max-height: 600px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.admin-preview__day {
+  border-radius: 18px;
+  border: 1px solid rgba(206, 141, 103, 0.24);
+  padding: 14px;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 245, 236, 0.82),
+    rgba(255, 252, 248, 0.96)
+  );
+}
+
+.admin-preview__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-preview ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-panel {
+    padding: 18px;
+  }
+
+  .json-editor {
+    min-height: 420px;
+  }
+}

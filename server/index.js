@@ -17,6 +17,15 @@ const ALLOWED_MEAL_TYPES = new Set(['lunch', 'a_la_carte']);
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res
+    .status(200)
+    .type('text/plain')
+    .send(
+      'Pizzeria Pro API is running. Try /api/health or /api/menu for JSON data.'
+    );
+});
+
 function createHttpError(status, code, message, details = []) {
   const error = new Error(message);
   error.status = status;
@@ -345,9 +354,14 @@ app.delete('/api/menu/:date', requireAdmin, async (req, res) => {
   }
 });
 
-app.use((err, _req, res, _next) => sendError(res, err));
+app.use((err, _req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return sendError(res, err);
+});
 
 app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`API server running on http://localhost:${PORT}`);
 });

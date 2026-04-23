@@ -1,12 +1,7 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import {
-  getCurrentCustomer,
-  loginCustomer,
-  logoutCustomer,
-  registerCustomer,
-} from '../utils/customerAuth';
+import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import '../css/auth_style.css';
 
 const initialFormState = {
@@ -17,11 +12,14 @@ const initialFormState = {
 };
 
 function AccountPage() {
+  const {
+    customer: currentCustomer,
+    loginCustomer,
+    logoutCustomer,
+    registerCustomer,
+  } = useCustomerSession();
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState(initialFormState);
-  const [currentCustomer, setCurrentCustomer] = useState(() =>
-    getCurrentCustomer()
-  );
   const [feedback, setFeedback] = useState({type: '', message: ''});
 
   const isRegistration = mode === 'register';
@@ -30,13 +28,9 @@ function AccountPage() {
     () =>
       isRegistration
         ? 'Luo asiakastili nopeaa tilaamista varten.'
-        : 'Kirjaudu sisään',
+        : 'Kirjaudu sisään ja jatka tilausta siitä mihin jäit.',
     [isRegistration]
   );
-
-  useEffect(() => {
-    setCurrentCustomer(getCurrentCustomer());
-  }, []);
 
   function resetFeedback() {
     setFeedback({type: '', message: ''});
@@ -73,7 +67,6 @@ function AccountPage() {
         return;
       }
 
-      setCurrentCustomer(result.customer);
       setFeedback({
         type: 'success',
         message: 'Tili luotu onnistuneesti. Voit nyt kirjautua sisään.',
@@ -93,14 +86,12 @@ function AccountPage() {
       return;
     }
 
-    setCurrentCustomer(result.customer);
     setFeedback({type: 'success', message: 'Kirjautuminen onnistui.'});
     setFormData(initialFormState);
   }
 
   function handleLogout() {
     logoutCustomer();
-    setCurrentCustomer(null);
     setFeedback({type: 'success', message: 'Olet kirjautunut ulos.'});
   }
 
@@ -112,9 +103,10 @@ function AccountPage() {
         <section className="hero__content account-hero" id="kirjautuminen">
           <p className="eyebrow">Asiakastili</p>
           <h1>{title}</h1>
-          <h2 className="hero__text account-hero__text">
-            ja jatka tilausta siitä mihin jäit.
-          </h2>
+          <p className="hero__text account-hero__text">
+            Kirjautuminen nopeuttaa tilaamista ja selkeyttää omien tietojen
+            hallintaa.
+          </p>
         </section>
       </header>
 

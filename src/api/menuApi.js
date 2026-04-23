@@ -1,3 +1,5 @@
+import {getStoredMenuData} from '../utils/menuStore';
+
 function formatPrice(priceCents, currency = 'EUR') {
   return new Intl.NumberFormat('fi-FI', {
     style: 'currency',
@@ -6,7 +8,11 @@ function formatPrice(priceCents, currency = 'EUR') {
   }).format(priceCents / 100);
 }
 
-function toCardItem(menuItem) {
+function isToday(date) {
+  return date === new Date().toLocaleDateString('sv-SE');
+}
+
+function toCardItem(menuItem, day) {
   const diets =
     Array.isArray(menuItem.diet) && menuItem.diet.length > 0
       ? menuItem.diet.join(', ')
@@ -16,25 +22,39 @@ function toCardItem(menuItem) {
 
   return {
     id: menuItem.itemId,
+    dayId: day.dayId,
+    dayLabel: day.label,
+    date: day.date,
+    isToday: isToday(day.date),
     name: menuItem.name,
     description: menuItem.description || '',
     tag: diets,
     price: formatPrice(menuItem.priceCents, menuItem.currency),
+    priceCents: menuItem.priceCents,
+    currency: menuItem.currency,
     image: menuItem.image || '/src/assets/images/pizza-margherita.jpg',
   };
 }
 
-export async function getWeeklyMenuCards() {
-  const response = await fetch('/api/menu');
-  if (!response.ok) {
-    throw new Error(`Menu fetch failed: ${response.status}`);
-  }
+export function getWeeklyMenuData() {
+  return getStoredMenuData();
+}
 
-  const payload = await response.json();
+export function getWeeklyMenuSections() {
+  const payload = getWeeklyMenuData();
   const days = Array.isArray(payload.days) ? payload.days : [];
 
-  const items = days.flatMap(day =>
-    Array.isArray(day.items) ? day.items : []
-  );
-  return items.map(toCardItem);
+  return days.map(day => ({
+    dayId: day.dayId,
+    label: day.label || day.dayId,
+    date: day.date,
+    isToday: isToday(day.date),
+    items: Array.isArray(day.items)
+      ? day.items.map(item => toCardItem(item, day))
+      : [],
+  }));
+}
+
+export function getWeeklyMenuCards() {
+  return getWeeklyMenuSections().flatMap(section => section.items);
 }

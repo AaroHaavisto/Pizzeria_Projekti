@@ -27,7 +27,7 @@ function MainPage() {
 
   return (
     <>
-      <header className="hero">
+      <header className="hero hero--home">
         <Navigation />
 
         <section className="hero__content" id="etusivu">
@@ -48,6 +48,14 @@ function MainPage() {
             </Link>
             <a className="button button--secondary" href="#sijainti">
               Aukioloajat
+            </a>
+          </div>
+          <div className="hero__subactions">
+            <Link className="chip-link" to="/cart">
+              Ostoskori
+            </Link>
+            <a className="chip-link" href="#menu">
+              Suosikit
             </a>
           </div>
           <ul

@@ -13,52 +13,16 @@
   padding: 10px clamp(20px, 4vw, 56px) 56px;
 }
 
-.pizza-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.pizza-card {
-  border: 1px solid rgba(206, 141, 103, 0.34);
-  background: rgba(255, 251, 245, 0.8);
-  border-radius: 22px;
-  overflow: hidden;
-  display: grid;
-}
-
-.pizza-card:hover {
-  box-shadow: 0 8px 20px rgba(176, 83, 35, 0.3);
-  transform: translateY(-1px);
-}
-
-.pizza-card img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  display: block;
-}
-
-.pizza-card__content {
-  padding: 16px;
-  display: grid;
-  gap: 8px;
-}
-
-.pizza-card__meta {
-  display: flex;
-  justify-content: space-between;
+.menu-page .hero__actions {
   align-items: center;
-  gap: 12px;
 }
 
-.pizza-card__price {
-  font-weight: 800;
-  color: #b05323;
+.menu-page .hero__subactions {
+  margin-top: -4px;
 }
 
 @media (max-width: 900px) {
-  .pizza-grid {
-    grid-template-columns: 1fr;
+  .menu-page .hero__subactions {
+    margin-top: 0;
   }
 }

@@ -18,5 +18,6 @@ export default defineConfig([
         ...globals.node,
       },
     },
+    ignores: ['dist/**'],
   },
 ]);
