@@ -1,29 +1,63 @@
+import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
+import {getFeaturedMenuCards} from '../api/menuApi';
 import Navigation from '../components/Navigation';
 
 function MainPage() {
-  const menuItems = [
+  const fallbackMenuItems = [
     {
+      id: 'kana-pizza',
+      name: 'Kana-pizza',
+      description: 'Kana, mozzarella, punasipuli ja talon tomaattikastike.',
+      price: '12,50 €',
+    },
+    {
+      id: 'diavola',
+      name: 'Diavola',
+      description: 'Salami piccante, chili ja mozzarella.',
+      price: '13,20 €',
+    },
+    {
+      id: 'tonno',
+      name: 'Tonno',
+      description: 'Tonnikala, kapris ja punasipuli.',
+      price: '12,80 €',
+    },
+    {
+      id: 'margherita',
       name: 'Margherita',
       description: 'Tomaatti, mozzarella, basilika ja oliiviöljy.',
-      price: '9,90',
-    },
-    {
-      name: 'Pepperoni',
-      description: 'Rohkea, tulinen ja juuri sopivasti mausteinen.',
-      price: '11,50',
-    },
-    {
-      name: 'Quattro Formaggi',
-      description: 'Neljä juustoa ja pehmeä, täyteläinen maku.',
-      price: '12,90',
-    },
-    {
-      name: 'Chicken BBQ',
-      description: 'Kana, BBQ-kastike, punasipuli ja mozzarella.',
-      price: '12,50',
+      price: '9,90 €',
     },
   ];
+  const [menuItems, setMenuItems] = useState(fallbackMenuItems);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadFeatured() {
+      try {
+        const featured = await getFeaturedMenuCards([
+          'Kana-pizza',
+          'Diavola',
+          'Tonno',
+          'Margherita',
+        ]);
+
+        if (mounted && featured.length === 4) {
+          setMenuItems(featured);
+        }
+      } catch {
+        // Keep fallback menu items if API cannot be reached.
+      }
+    }
+
+    loadFeatured();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <>
@@ -107,11 +141,11 @@ function MainPage() {
           </div>
 
           <div className="menu-grid">
-            {menuItems.map((item, index) => (
-              <article className="menu-card" key={index}>
+            {menuItems.map(item => (
+              <article className="menu-card" key={item.id || item.name}>
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
-                <span>{item.price} €</span>
+                <span>{item.price}</span>
               </article>
             ))}
           </div>

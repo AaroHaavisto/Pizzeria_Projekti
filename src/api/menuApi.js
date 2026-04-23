@@ -1,5 +1,7 @@
 import {getStoredMenuData} from '../utils/menuStore';
 
+const MENU_API_ENDPOINT = '/api/menu';
+
 function formatPrice(priceCents, currency = 'EUR') {
   return new Intl.NumberFormat('fi-FI', {
     style: 'currency',
@@ -10,6 +12,19 @@ function formatPrice(priceCents, currency = 'EUR') {
 
 function isToday(date) {
   return date === new Date().toLocaleDateString('sv-SE');
+}
+
+function formatDayLabel(date, fallback) {
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback;
+  }
+
+  return parsed.toLocaleDateString('fi-FI', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'numeric',
+  });
 }
 
 function toCardItem(menuItem, day) {
@@ -36,17 +51,26 @@ function toCardItem(menuItem, day) {
   };
 }
 
-export function getWeeklyMenuData() {
-  return getStoredMenuData();
+export async function getWeeklyMenuData() {
+  try {
+    const response = await fetch(MENU_API_ENDPOINT);
+    if (!response.ok) {
+      throw new Error(`Menu fetch failed: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch {
+    return getStoredMenuData();
+  }
 }
 
-export function getWeeklyMenuSections() {
-  const payload = getWeeklyMenuData();
+export async function getWeeklyMenuSections() {
+  const payload = await getWeeklyMenuData();
   const days = Array.isArray(payload.days) ? payload.days : [];
 
   return days.map(day => ({
     dayId: day.dayId,
-    label: day.label || day.dayId,
+    label: day.label || formatDayLabel(day.date, day.dayId),
     date: day.date,
     isToday: isToday(day.date),
     items: Array.isArray(day.items)
@@ -55,6 +79,23 @@ export function getWeeklyMenuSections() {
   }));
 }
 
-export function getWeeklyMenuCards() {
-  return getWeeklyMenuSections().flatMap(section => section.items);
+export async function getWeeklyMenuCards() {
+  const sections = await getWeeklyMenuSections();
+  return sections.flatMap(section => section.items);
+}
+
+export async function getFeaturedMenuCards(featuredNames = []) {
+  const cards = await getWeeklyMenuCards();
+
+  if (!Array.isArray(featuredNames) || featuredNames.length === 0) {
+    return cards.slice(0, 4);
+  }
+
+  const normalized = new Map(
+    cards.map(card => [card.name.trim().toLowerCase(), card])
+  );
+
+  return featuredNames
+    .map(name => normalized.get(String(name).trim().toLowerCase()))
+    .filter(Boolean);
 }

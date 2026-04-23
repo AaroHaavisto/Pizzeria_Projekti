@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import PizzaCard from '../components/PizzaCard';
@@ -8,7 +8,37 @@ import '../css/menu_style.css';
 
 function MenuPage() {
   const {addToCart, items, itemCount, totalCents} = useCart();
-  const sections = useMemo(() => getWeeklyMenuSections(), []);
+  const [sections, setSections] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadMenu() {
+      try {
+        const nextSections = await getWeeklyMenuSections();
+        if (mounted) {
+          setSections(nextSections);
+        }
+      } catch {
+        if (mounted) {
+          setLoadError('Menua ei voitu ladata API:sta. Naytetaan varadata.');
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadMenu();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const todaySection = sections.find(section => section.isToday) || sections[0];
 
   return (
@@ -46,6 +76,8 @@ function MenuPage() {
       </header>
 
       <main className="pizza-showcase" aria-label="Pizzeria Pro menu listaus">
+        {isLoading ? <p>Ladataan menua...</p> : null}
+        {loadError ? <p>{loadError}</p> : null}
         <section className="menu-summary-card">
           <p className="section__label">Tilaus</p>
           <h2>Helppo nouto ja selkeä hinnoittelu</h2>
@@ -54,7 +86,7 @@ function MenuPage() {
             jokaisen tuotteen kortissa.
           </p>
           <div className="menu-summary-card__stats">
-            <span>{sections.length} päivän lista</span>
+            <span>{sections.length} paivan lista</span>
             <span>{itemCount} tuotetta korissa</span>
             <span>
               {(totalCents / 100).toFixed(2).replace('.', ',')} € yhteensä
@@ -94,6 +126,9 @@ function MenuPage() {
                   <PizzaCard key={pizza.id} pizza={pizza} onAdd={addToCart} />
                 ))}
               </div>
+              {section.items.length === 0 ? (
+                <p>Talle paivalle ei ole viela annoksia.</p>
+              ) : null}
             </section>
           ))}
         </div>
