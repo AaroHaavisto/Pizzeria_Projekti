@@ -2,13 +2,13 @@ import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import PizzaCard from '../components/PizzaCard';
-import {getWeeklyMenuSections} from '../api/menuApi';
+import {getWeeklyMenuCards} from '../api/menuApi';
 import {useCart} from '../contexts/CartContext';
 import '../css/menu_style.css';
 
 function MenuPage() {
   const {addToCart, items, itemCount, totalCents} = useCart();
-  const [sections, setSections] = useState([]);
+  const [pizzas, setPizzas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -17,9 +17,9 @@ function MenuPage() {
 
     async function loadMenu() {
       try {
-        const nextSections = await getWeeklyMenuSections();
+        const nextPizzas = await getWeeklyMenuCards();
         if (mounted) {
-          setSections(nextSections);
+          setPizzas(nextPizzas);
         }
       } catch {
         if (mounted) {
@@ -39,8 +39,6 @@ function MenuPage() {
     };
   }, []);
 
-  const todaySection = sections.find(section => section.isToday) || sections[0];
-
   return (
     <div className="menu-page">
       <header className="hero">
@@ -50,15 +48,12 @@ function MenuPage() {
           <p className="eyebrow">Koko valikoima</p>
           <h1 id="menu">Löydä suosikkipizza jokaiseen nälkätasoon.</h1>
           <p className="hero__text menu-hero-text">
-            Näet päivän tarjonnan yhdellä silmäyksellä. Lisää tuotteet koriin
-            suoraan tästä näkymästä.
+            Koko viikon pizzat yhdellä listalla. Lisää tuotteet koriin suoraan
+            tästä näkymästä.
           </p>
           <div className="hero__actions">
-            <a
-              className="button button--primary"
-              href={`#${todaySection?.dayId || 'menu'}`}
-            >
-              Avaa tämän päivän lista
+            <a className="button button--primary" href="#menu-lista">
+              Avaa koko lista
             </a>
             <Link className="button button--secondary" to="/cart">
               Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
@@ -69,7 +64,7 @@ function MenuPage() {
               Etusivu
             </Link>
             <a className="chip-link" href="#menu-lista">
-              Kaikki päivät
+              Kaikki pizzat
             </a>
           </div>
         </section>
@@ -86,7 +81,7 @@ function MenuPage() {
             jokaisen tuotteen kortissa.
           </p>
           <div className="menu-summary-card__stats">
-            <span>{sections.length} paivan lista</span>
+            <span>{pizzas.length} pizzaa listalla</span>
             <span>{itemCount} tuotetta korissa</span>
             <span>
               {(totalCents / 100).toFixed(2).replace('.', ',')} € yhteensä
@@ -108,29 +103,14 @@ function MenuPage() {
         </section>
 
         <div className="menu-days" id="menu-lista">
-          {sections.map(section => (
-            <section
-              key={section.dayId}
-              className={`day-section${section.isToday ? ' day-section--today' : ''}`}
-              id={section.dayId}
-            >
-              <div className="section__heading">
-                <p className="section__label">{section.label}</p>
-                <h2>
-                  {section.isToday ? 'Tämän päivän lista' : 'Päivän tarjonta'}
-                </h2>
-              </div>
-
-              <div className="pizza-grid">
-                {section.items.map(pizza => (
-                  <PizzaCard key={pizza.id} pizza={pizza} onAdd={addToCart} />
-                ))}
-              </div>
-              {section.items.length === 0 ? (
-                <p>Talle paivalle ei ole viela annoksia.</p>
-              ) : null}
-            </section>
-          ))}
+          <div className="pizza-grid">
+            {pizzas.map(pizza => (
+              <PizzaCard key={pizza.id} pizza={pizza} onAdd={addToCart} />
+            ))}
+          </div>
+          {pizzas.length === 0 && !isLoading ? (
+            <p>Listalla ei ole viela annoksia.</p>
+          ) : null}
         </div>
       </main>
     </div>

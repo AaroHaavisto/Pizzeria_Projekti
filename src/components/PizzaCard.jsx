@@ -5,13 +5,9 @@ function PizzaCard({pizza, onAdd}) {
     <article className="pizza-card">
       <div className="pizza-card__image-wrap">
         <img src={pizza.image} alt={pizza.name + ' pizza'} loading="lazy" />
-        {pizza.isToday ? (
-          <span className="pizza-card__today">Tänään</span>
-        ) : null}
       </div>
       <div className="pizza-card__content">
         <div className="pizza-card__topline">
-          <span className="pizza-card__day">{pizza.dayLabel}</span>
           <span className="pizza-card__tag">{pizza.tag}</span>
         </div>
         <h2>{pizza.name}</h2>

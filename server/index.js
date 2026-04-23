@@ -49,29 +49,28 @@ function sendError(res, err) {
   });
 }
 
-function todayDateISO() {
-  return new Date().toLocaleDateString('sv-SE');
-}
-
 async function readMenuData() {
   const raw = await fs.readFile(DATA_PATH, 'utf8');
-  return JSON.parse(raw);
+  const parsed = JSON.parse(raw);
+
+  if (Array.isArray(parsed.items)) {
+    return {items: parsed.items};
+  }
+
+  if (Array.isArray(parsed.days)) {
+    return {
+      items: parsed.days.flatMap(day =>
+        Array.isArray(day.items) ? day.items : []
+      ),
+    };
+  }
+
+  return {items: []};
 }
 
 async function writeMenuData(payload) {
-  const serialized = `${JSON.stringify(payload, null, 2)}\n`;
+  const serialized = `${JSON.stringify({items: payload.items || []}, null, 2)}\n`;
   await fs.writeFile(DATA_PATH, serialized, 'utf8');
-}
-
-function validateIsoDate(value, fieldName) {
-  const isIsoLike = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const isValidDate = !Number.isNaN(Date.parse(`${value}T00:00:00`));
-
-  if (!isIsoLike || !isValidDate) {
-    return `${fieldName} must be valid ISO date (YYYY-MM-DD)`;
-  }
-
-  return null;
 }
 
 function validateItem(item, pathPrefix) {
@@ -118,37 +117,6 @@ function validateItem(item, pathPrefix) {
   return errors;
 }
 
-function validateDay(day, pathPrefix = 'day') {
-  const errors = [];
-
-  if (!day || typeof day !== 'object') {
-    return [`${pathPrefix} must be an object`];
-  }
-
-  if (!day.dayId || typeof day.dayId !== 'string') {
-    errors.push(`${pathPrefix}.dayId is required and must be string`);
-  }
-
-  if (!day.date || typeof day.date !== 'string') {
-    errors.push(`${pathPrefix}.date is required and must be string`);
-  } else {
-    const dateErr = validateIsoDate(day.date, `${pathPrefix}.date`);
-    if (dateErr) {
-      errors.push(dateErr);
-    }
-  }
-
-  if (!Array.isArray(day.items)) {
-    errors.push(`${pathPrefix}.items must be an array`);
-  } else {
-    day.items.forEach((item, idx) => {
-      errors.push(...validateItem(item, `${pathPrefix}.items[${idx}]`));
-    });
-  }
-
-  return errors;
-}
-
 function requireAdmin(req, res, next) {
   const token = req.get('x-admin-token');
   if (token !== ADMIN_TOKEN) {
@@ -174,39 +142,26 @@ app.get('/api/menu', async (_req, res) => {
 });
 
 app.get('/api/menu/today', async (_req, res) => {
-  try {
-    const data = await readMenuData();
-    const today = todayDateISO();
-    const day = data.days.find(entry => entry.date === today);
-
-    if (!day) {
-      throw createHttpError(404, 'DAY_NOT_FOUND', `No menu found for ${today}`);
-    }
-
-    res.json({week: data.week, day});
-  } catch (err) {
-    sendError(res, err);
-  }
+  sendError(
+    res,
+    createHttpError(
+      410,
+      'DEPRECATED_ENDPOINT',
+      'Day-based menu endpoints are removed. Use GET /api/menu.'
+    )
+  );
 });
 
-app.get('/api/menu/:date', async (req, res) => {
+app.get('/api/menu/:itemId', async (req, res) => {
   try {
-    const {date} = req.params;
-    const dateErr = validateIsoDate(date, 'date');
-    if (dateErr) {
-      throw createHttpError(400, 'VALIDATION_ERROR', 'Invalid request', [
-        dateErr,
-      ]);
-    }
-
     const data = await readMenuData();
-    const day = data.days.find(entry => entry.date === date);
+    const item = data.items.find(entry => entry.itemId === req.params.itemId);
 
-    if (!day) {
-      throw createHttpError(404, 'DAY_NOT_FOUND', `No menu found for ${date}`);
+    if (!item) {
+      throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
-    res.json({week: data.week, day});
+    res.json({item});
   } catch (err) {
     sendError(res, err);
   }
@@ -215,7 +170,7 @@ app.get('/api/menu/:date', async (req, res) => {
 app.post('/api/menu', requireAdmin, async (req, res) => {
   try {
     const payload = req.body;
-    const errors = validateDay(payload, 'day');
+    const errors = validateItem(payload, 'item');
 
     if (errors.length > 0) {
       throw createHttpError(
@@ -227,40 +182,31 @@ app.post('/api/menu', requireAdmin, async (req, res) => {
     }
 
     const data = await readMenuData();
-    const idx = data.days.findIndex(entry => entry.date === payload.date);
+    const idx = data.items.findIndex(entry => entry.itemId === payload.itemId);
 
     if (idx >= 0) {
-      data.days[idx] = payload;
+      data.items[idx] = payload;
     } else {
-      data.days.push(payload);
-      data.days.sort((a, b) => a.date.localeCompare(b.date));
+      data.items.push(payload);
     }
 
     await writeMenuData(data);
-    res.status(201).json({message: 'Day upserted', day: payload});
+    res.status(201).json({message: 'Item upserted', item: payload});
   } catch (err) {
     sendError(res, err);
   }
 });
 
-app.put('/api/menu/:date', requireAdmin, async (req, res) => {
+app.put('/api/menu/:itemId', requireAdmin, async (req, res) => {
   try {
-    const {date} = req.params;
-    const dateErr = validateIsoDate(date, 'date');
-    if (dateErr) {
-      throw createHttpError(400, 'VALIDATION_ERROR', 'Invalid request', [
-        dateErr,
-      ]);
-    }
-
     const payload = req.body;
-    if (payload.date !== date) {
+    if (payload.itemId !== req.params.itemId) {
       throw createHttpError(400, 'VALIDATION_ERROR', 'date mismatch', [
-        'Body date must match URL param',
+        'Body itemId must match URL param',
       ]);
     }
 
-    const errors = validateDay(payload, 'day');
+    const errors = validateItem(payload, 'item');
     if (errors.length > 0) {
       throw createHttpError(
         400,
@@ -271,46 +217,40 @@ app.put('/api/menu/:date', requireAdmin, async (req, res) => {
     }
 
     const data = await readMenuData();
-    const idx = data.days.findIndex(entry => entry.date === date);
+    const idx = data.items.findIndex(
+      entry => entry.itemId === req.params.itemId
+    );
 
     if (idx < 0) {
-      throw createHttpError(404, 'DAY_NOT_FOUND', `No menu found for ${date}`);
+      throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
-    data.days[idx] = payload;
+    data.items[idx] = payload;
     await writeMenuData(data);
 
-    res.json({message: 'Day updated', day: payload});
+    res.json({message: 'Item updated', item: payload});
   } catch (err) {
     sendError(res, err);
   }
 });
 
-app.patch('/api/menu/:date', requireAdmin, async (req, res) => {
+app.patch('/api/menu/:itemId', requireAdmin, async (req, res) => {
   try {
-    const {date} = req.params;
-    const dateErr = validateIsoDate(date, 'date');
-    if (dateErr) {
-      throw createHttpError(400, 'VALIDATION_ERROR', 'Invalid request', [
-        dateErr,
-      ]);
-    }
-
     const data = await readMenuData();
-    const idx = data.days.findIndex(entry => entry.date === date);
+    const idx = data.items.findIndex(
+      entry => entry.itemId === req.params.itemId
+    );
     if (idx < 0) {
-      throw createHttpError(404, 'DAY_NOT_FOUND', `No menu found for ${date}`);
+      throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
     const merged = {
-      ...data.days[idx],
+      ...data.items[idx],
       ...req.body,
-      date,
-      dayId: req.body.dayId || data.days[idx].dayId || date,
-      items: req.body.items || data.days[idx].items,
+      itemId: req.params.itemId,
     };
 
-    const errors = validateDay(merged, 'day');
+    const errors = validateItem(merged, 'item');
     if (errors.length > 0) {
       throw createHttpError(
         400,
@@ -320,33 +260,27 @@ app.patch('/api/menu/:date', requireAdmin, async (req, res) => {
       );
     }
 
-    data.days[idx] = merged;
+    data.items[idx] = merged;
     await writeMenuData(data);
 
-    res.json({message: 'Day patched', day: merged});
+    res.json({message: 'Item patched', item: merged});
   } catch (err) {
     sendError(res, err);
   }
 });
 
-app.delete('/api/menu/:date', requireAdmin, async (req, res) => {
+app.delete('/api/menu/:itemId', requireAdmin, async (req, res) => {
   try {
-    const {date} = req.params;
-    const dateErr = validateIsoDate(date, 'date');
-    if (dateErr) {
-      throw createHttpError(400, 'VALIDATION_ERROR', 'Invalid request', [
-        dateErr,
-      ]);
-    }
-
     const data = await readMenuData();
-    const nextDays = data.days.filter(entry => entry.date !== date);
+    const nextItems = data.items.filter(
+      entry => entry.itemId !== req.params.itemId
+    );
 
-    if (nextDays.length === data.days.length) {
-      throw createHttpError(404, 'DAY_NOT_FOUND', `No menu found for ${date}`);
+    if (nextItems.length === data.items.length) {
+      throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
-    data.days = nextDays;
+    data.items = nextItems;
     await writeMenuData(data);
     res.status(204).send();
   } catch (err) {

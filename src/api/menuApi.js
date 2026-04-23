@@ -10,24 +10,7 @@ function formatPrice(priceCents, currency = 'EUR') {
   }).format(priceCents / 100);
 }
 
-function isToday(date) {
-  return date === new Date().toLocaleDateString('sv-SE');
-}
-
-function formatDayLabel(date, fallback) {
-  const parsed = new Date(`${date}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return fallback;
-  }
-
-  return parsed.toLocaleDateString('fi-FI', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'numeric',
-  });
-}
-
-function toCardItem(menuItem, day) {
+function toCardItem(menuItem) {
   const diets =
     Array.isArray(menuItem.diet) && menuItem.diet.length > 0
       ? menuItem.diet.join(', ')
@@ -37,10 +20,6 @@ function toCardItem(menuItem, day) {
 
   return {
     id: menuItem.itemId,
-    dayId: day.dayId,
-    dayLabel: day.label,
-    date: day.date,
-    isToday: isToday(day.date),
     name: menuItem.name,
     description: menuItem.description || '',
     tag: diets,
@@ -66,17 +45,19 @@ export async function getWeeklyMenuData() {
 
 export async function getWeeklyMenuSections() {
   const payload = await getWeeklyMenuData();
-  const days = Array.isArray(payload.days) ? payload.days : [];
+  const items = Array.isArray(payload.items)
+    ? payload.items
+    : Array.isArray(payload.days)
+      ? payload.days.flatMap(day => (Array.isArray(day.items) ? day.items : []))
+      : [];
 
-  return days.map(day => ({
-    dayId: day.dayId,
-    label: day.label || formatDayLabel(day.date, day.dayId),
-    date: day.date,
-    isToday: isToday(day.date),
-    items: Array.isArray(day.items)
-      ? day.items.map(item => toCardItem(item, day))
-      : [],
-  }));
+  return [
+    {
+      dayId: 'all-items',
+      label: 'Kaikki pizzat',
+      items: items.map(item => toCardItem(item)),
+    },
+  ];
 }
 
 export async function getWeeklyMenuCards() {

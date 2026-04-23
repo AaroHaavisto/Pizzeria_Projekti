@@ -1,140 +1,114 @@
 {
-  "week": "2026-W17",
-  "days": [
+  "items": [
     {
-      "dayId": "2026-04-20",
-      "label": "Maanantai",
-      "date": "2026-04-20",
-      "items": [
-        {
-          "itemId": "margherita-2026-04-20",
-          "name": "Margherita",
-          "description": "Tomaatti, mozzarella, basilika ja oliiviöljy.",
-          "priceCents": 990,
-          "currency": "EUR",
-          "diet": ["VEG"],
-          "mealType": "lunch",
-          "image": "/src/assets/images/pizza-margherita.jpg"
-        },
-        {
-          "itemId": "pepperoni-2026-04-20",
-          "name": "Pepperoni",
-          "description": "Pepperoni, mozzarella ja oregano.",
-          "priceCents": 1150,
-          "currency": "EUR",
-          "diet": [],
-          "mealType": "a_la_carte",
-          "image": "/src/assets/images/pizza-pepperoni.jpg"
-        }
-      ]
+      "itemId": "kana-pizza",
+      "name": "Kana-pizza",
+      "description": "Kana, mozzarella, punasipuli ja talon tomaattikastike.",
+      "priceCents": 1250,
+      "currency": "EUR",
+      "diet": ["L"],
+      "mealType": "lunch",
+      "image": "/src/assets/images/pizza-chicken-bbq.jpg"
     },
     {
-      "dayId": "2026-04-21",
-      "label": "Tiistai",
-      "date": "2026-04-21",
-      "items": [
-        {
-          "itemId": "quattro-2026-04-21",
-          "name": "Quattro Formaggi",
-          "description": "Mozzarella, gorgonzola, parmesan ja emmental.",
-          "priceCents": 1290,
-          "currency": "EUR",
-          "diet": ["VEG"],
-          "mealType": "lunch",
-          "image": "/src/assets/images/pizza-quattro-formaggi.jpg"
-        },
-        {
-          "itemId": "bbq-2026-04-21",
-          "name": "Chicken BBQ",
-          "description": "Kana, BBQ-kastike, punasipuli ja mozzarella.",
-          "priceCents": 1250,
-          "currency": "EUR",
-          "diet": ["L"],
-          "mealType": "a_la_carte",
-          "image": "/src/assets/images/pizza-chicken-bbq.jpg"
-        }
-      ]
+      "itemId": "kasvispizza",
+      "name": "Kasvispizza",
+      "description": "Paprika, herkkusieni, oliivi, sipuli ja mozzarella.",
+      "priceCents": 1050,
+      "currency": "EUR",
+      "diet": ["VEG", "G"],
+      "mealType": "lunch",
+      "image": "/src/assets/images/pizza-vegetariana.jpg"
     },
     {
-      "dayId": "2026-04-22",
-      "label": "Keskiviikko",
-      "date": "2026-04-22",
-      "items": [
-        {
-          "itemId": "vegetariana-2026-04-22",
-          "name": "Vegetariana",
-          "description": "Paprika, oliivi, herkkusieni ja sipuli.",
-          "priceCents": 1190,
-          "currency": "EUR",
-          "diet": ["VEG", "G"],
-          "mealType": "lunch",
-          "image": "/src/assets/images/pizza-vegetariana.jpg"
-        },
-        {
-          "itemId": "diavola-2026-04-22",
-          "name": "Diavola",
-          "description": "Salami piccante, chili ja mozzarella.",
-          "priceCents": 1320,
-          "currency": "EUR",
-          "diet": [],
-          "mealType": "a_la_carte",
-          "image": "/src/assets/images/pizza-diavola.jpg"
-        }
-      ]
+      "itemId": "diavola",
+      "name": "Diavola",
+      "description": "Salami piccante, chili ja mozzarella.",
+      "priceCents": 1320,
+      "currency": "EUR",
+      "diet": [],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-diavola.jpg"
     },
     {
-      "dayId": "2026-04-23",
-      "label": "Torstai",
-      "date": "2026-04-23",
-      "items": [
-        {
-          "itemId": "tonno-2026-04-23",
-          "name": "Tonno",
-          "description": "Tonnikala, kapris ja punasipuli.",
-          "priceCents": 1280,
-          "currency": "EUR",
-          "diet": ["L"],
-          "mealType": "lunch",
-          "image": "/src/assets/images/pizza-tonno.jpg"
-        },
-        {
-          "itemId": "prosciutto-2026-04-23",
-          "name": "Prosciutto",
-          "description": "Prosciutto, rucola ja parmesan.",
-          "priceCents": 1340,
-          "currency": "EUR",
-          "diet": ["L"],
-          "mealType": "a_la_carte",
-          "image": "/src/assets/images/pizza-prosciutto.jpg"
-        }
-      ]
+      "itemId": "margherita",
+      "name": "Margherita",
+      "description": "Tomaatti, mozzarella, basilika ja oliivioljy.",
+      "priceCents": 990,
+      "currency": "EUR",
+      "diet": ["VEG"],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-margherita.jpg"
     },
     {
-      "dayId": "2026-04-24",
-      "label": "Perjantai",
-      "date": "2026-04-24",
-      "items": [
-        {
-          "itemId": "capricciosa-2026-04-24",
-          "name": "Capricciosa",
-          "description": "Kinkku, herkkusieni ja artisokka.",
-          "priceCents": 1260,
-          "currency": "EUR",
-          "diet": [],
-          "mealType": "lunch",
-          "image": "/src/assets/images/pizza-capricciosa.jpg"
-        },
-        {
-          "itemId": "hawaii-2026-04-24",
-          "name": "Hawaii",
-          "description": "Kinkku, ananas ja mozzarella.",
-          "priceCents": 1140,
-          "currency": "EUR",
-          "diet": [],
-          "mealType": "a_la_carte",
-          "image": "/src/assets/images/pizza-hawaii.jpg"
-        }
-      ]
+      "itemId": "tonno",
+      "name": "Tonno",
+      "description": "Tonnikala, kapris ja punasipuli.",
+      "priceCents": 1280,
+      "currency": "EUR",
+      "diet": ["L"],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-tonno.jpg"
+    },
+    {
+      "itemId": "pepperoni",
+      "name": "Pepperoni",
+      "description": "Pepperoni, mozzarella ja oregano.",
+      "priceCents": 1150,
+      "currency": "EUR",
+      "diet": [],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-pepperoni.jpg"
+    },
+    {
+      "itemId": "quattro-formaggi",
+      "name": "Quattro Formaggi",
+      "description": "Mozzarella, gorgonzola, parmesan ja emmental.",
+      "priceCents": 1290,
+      "currency": "EUR",
+      "diet": ["VEG"],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-quattro-formaggi.jpg"
+    },
+    {
+      "itemId": "vegetariana",
+      "name": "Vegetariana",
+      "description": "Paprika, oliivi, herkkusieni ja sipuli.",
+      "priceCents": 1190,
+      "currency": "EUR",
+      "diet": ["VEG", "G"],
+      "mealType": "lunch",
+      "image": "/src/assets/images/pizza-vegetariana.jpg"
+    },
+    {
+      "itemId": "prosciutto",
+      "name": "Prosciutto",
+      "description": "Prosciutto, rucola ja parmesan.",
+      "priceCents": 1340,
+      "currency": "EUR",
+      "diet": ["L"],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-prosciutto.jpg"
+    },
+    {
+      "itemId": "capricciosa",
+      "name": "Capricciosa",
+      "description": "Kinkku, herkkusieni ja artisokka.",
+      "priceCents": 1260,
+      "currency": "EUR",
+      "diet": [],
+      "mealType": "a_la_carte",
+      "image": "/src/assets/images/pizza-capricciosa.jpg"
+    },
+    {
+      "itemId": "hawaii",
+      "name": "Hawaii",
+      "description": "Kinkku, ananas ja mozzarella.",
+      "priceCents": 1140,
+      "currency": "EUR",
+      "diet": [],
+      "mealType": "lunch",
+      "image": "/src/assets/images/pizza-hawaii.jpg"
     }
   ]
 }

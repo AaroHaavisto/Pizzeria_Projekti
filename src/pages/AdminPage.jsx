@@ -31,13 +31,17 @@ function AdminPage() {
   }, [location.search]);
 
   const menuStats = useMemo(() => {
-    const days = Array.isArray(menuData.days) ? menuData.days : [];
-    const itemCount = days.reduce(
-      (sum, day) => sum + (Array.isArray(day.items) ? day.items.length : 0),
-      0
-    );
+    const itemCount = Array.isArray(menuData.items)
+      ? menuData.items.length
+      : Array.isArray(menuData.days)
+        ? menuData.days.reduce(
+            (sum, day) =>
+              sum + (Array.isArray(day.items) ? day.items.length : 0),
+            0
+          )
+        : 0;
 
-    return {days: days.length, itemCount};
+    return {itemCount};
   }, [menuData]);
 
   function handleSave() {
@@ -46,7 +50,7 @@ function AdminPage() {
 
       if (!isValidMenuJson(parsed)) {
         throw new Error(
-          'JSON-muodossa pitää olla days-taulukko ja tuotteet päivien sisällä.'
+          'JSON-muodossa pitää olla items-taulukko tai vanha days-rakenne.'
         );
       }
 
@@ -186,31 +190,33 @@ function AdminPage() {
 
         <aside className="admin-panel admin-panel--summary">
           <p className="section__label">Yhteenveto</p>
-          <h2>
-            {menuStats.days} päivää ja {menuStats.itemCount} tuotetta
-          </h2>
+          <h2>{menuStats.itemCount} tuotetta</h2>
           <p>
             Tallennus tapahtuu selaimen paikalliseen JSON-tilaan, joten sisältö
             säilyy sivun välillä ilman backendin muutoksia.
           </p>
 
           <div className="admin-preview">
-            {(Array.isArray(menuData.days) ? menuData.days : []).map(day => (
-              <article key={day.dayId} className="admin-preview__day">
-                <div className="admin-preview__head">
-                  <strong>{day.label}</strong>
-                  <span>{day.date}</span>
-                </div>
-                <ul>
-                  {(Array.isArray(day.items) ? day.items : []).map(item => (
-                    <li key={item.itemId}>
-                      {item.name} -{' '}
-                      {(item.priceCents / 100).toFixed(2).replace('.', ',')} €
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+            <article className="admin-preview__day">
+              <div className="admin-preview__head">
+                <strong>Kaikki tuotteet</strong>
+              </div>
+              <ul>
+                {(Array.isArray(menuData.items)
+                  ? menuData.items
+                  : Array.isArray(menuData.days)
+                    ? menuData.days.flatMap(day =>
+                        Array.isArray(day.items) ? day.items : []
+                      )
+                    : []
+                ).map(item => (
+                  <li key={item.itemId}>
+                    {item.name} -{' '}
+                    {(item.priceCents / 100).toFixed(2).replace('.', ',')} €
+                  </li>
+                ))}
+              </ul>
+            </article>
           </div>
         </aside>
       </main>

@@ -7,6 +7,21 @@ function cloneMenuData(menuData) {
 }
 
 function isValidMenuData(menuData) {
+  const hasItemsShape =
+    menuData &&
+    Array.isArray(menuData.items) &&
+    menuData.items.every(
+      item =>
+        item &&
+        typeof item === 'object' &&
+        typeof item.itemId === 'string' &&
+        typeof item.name === 'string'
+    );
+
+  if (hasItemsShape) {
+    return true;
+  }
+
   return Boolean(
     menuData &&
     Array.isArray(menuData.days) &&
