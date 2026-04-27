@@ -6,7 +6,9 @@ import {
   getAllMenuItems,
   getMenuItemById,
   initDatabase,
+  loginCustomerAccount,
   pingDatabase,
+  registerCustomerAccount,
   upsertMenuItem,
 } from './db.js';
 
@@ -50,6 +52,7 @@ function sendError(res, err) {
   ]);
 
   if (status === 500 && dbConnectionErrorCodes.has(err.code)) {
+    status = 503;
     code = 'DB_CONNECTION_ERROR';
     message =
       'Tietokantayhteys epäonnistui. Tarkista DB_HOST, DB_PORT, DB_USER, DB_PASSWORD ja DB_NAME.';
@@ -62,6 +65,40 @@ function sendError(res, err) {
       details,
     },
   });
+}
+
+function validateCustomerAuthPayload(payload, mode) {
+  const errors = [];
+
+  if (!payload || typeof payload !== 'object') {
+    return ['Body must be an object'];
+  }
+
+  if (mode === 'register') {
+    if (!payload.name || typeof payload.name !== 'string' || !payload.name.trim()) {
+      errors.push('name is required and must be string');
+    }
+  }
+
+  if (!payload.email || typeof payload.email !== 'string' || !payload.email.trim()) {
+    errors.push('email is required and must be string');
+  }
+
+  if (!payload.password || typeof payload.password !== 'string') {
+    errors.push('password is required and must be string');
+  } else if (mode === 'register' && payload.password.length < 6) {
+    errors.push('password must be at least 6 characters');
+  }
+
+  if (
+    mode === 'register' &&
+    payload.confirmPassword != null &&
+    payload.password !== payload.confirmPassword
+  ) {
+    errors.push('confirmPassword must match password');
+  }
+
+  return errors;
 }
 
 function validateItem(item, pathPrefix) {
@@ -123,6 +160,64 @@ app.get('/api/health', async (_req, res) => {
   try {
     await pingDatabase();
     res.json({status: 'ok', db: 'connected'});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.post('/api/customers/register', async (req, res) => {
+  try {
+    const errors = validateCustomerAuthPayload(req.body, 'register');
+    if (errors.length > 0) {
+      throw createHttpError(
+        400,
+        'VALIDATION_ERROR',
+        'Invalid request body',
+        errors
+      );
+    }
+
+    const customer = await registerCustomerAccount({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+    });
+
+    res.status(201).json({
+      message: 'Customer account created',
+      customer,
+    });
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.post('/api/customers/login', async (req, res) => {
+  try {
+    const errors = validateCustomerAuthPayload(req.body, 'login');
+    if (errors.length > 0) {
+      throw createHttpError(
+        400,
+        'VALIDATION_ERROR',
+        'Invalid request body',
+        errors
+      );
+    }
+
+    const customer = await loginCustomerAccount({
+      email: req.body.email,
+      password: req.body.password,
+    });
+
+    if (!customer) {
+      throw createHttpError(
+        401,
+        'INVALID_CREDENTIALS',
+        'Tarkista sähköposti ja salasana.'
+      );
+    }
+
+    res.json({customer});
   } catch (err) {
     sendError(res, err);
   }

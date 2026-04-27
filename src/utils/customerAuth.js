@@ -1,4 +1,8 @@
-const USERS_KEY = 'pizzeria_pro_customers';
+import {
+  loginCustomerRequest,
+  registerCustomerRequest,
+} from '../api/customerApi';
+
 const SESSION_KEY = 'pizzeria_pro_customer_session';
 
 function safeParse(value, fallback) {
@@ -35,19 +39,16 @@ function normalizeEmail(email) {
   return email.trim().toLowerCase();
 }
 
-function getCustomers() {
-  return readStorage(USERS_KEY, []);
-}
-
-function saveCustomers(customers) {
-  writeStorage(USERS_KEY, customers);
-}
-
 export function getCurrentCustomer() {
   return readStorage(SESSION_KEY, null);
 }
 
-export function registerCustomer({name, email, password, confirmPassword}) {
+export async function registerCustomer({
+  name,
+  email,
+  password,
+  confirmPassword,
+}) {
   const trimmedName = name.trim();
   const normalizedEmail = normalizeEmail(email);
 
@@ -67,58 +68,57 @@ export function registerCustomer({name, email, password, confirmPassword}) {
     return {ok: false, message: 'Salasanat eivät täsmää.'};
   }
 
-  const customers = getCustomers();
-  const duplicate = customers.find(
-    customer => customer.email === normalizedEmail
-  );
+  try {
+    const result = await registerCustomerRequest({
+      name: trimmedName,
+      email: normalizedEmail,
+      password,
+      confirmPassword,
+    });
 
-  if (duplicate) {
-    return {ok: false, message: 'Tällä sähköpostilla on jo tili.'};
+    if (!result.ok) {
+      return result;
+    }
+
+    return {
+      ok: true,
+      customer: result.customer,
+    };
+  } catch {
+    return {
+      ok: false,
+      message: 'Yhteys palvelimeen epäonnistui. Yritä hetken kuluttua uudelleen.',
+    };
   }
-
-  const customer = {
-    id: crypto.randomUUID(),
-    name: trimmedName,
-    email: normalizedEmail,
-    password,
-  };
-
-  saveCustomers([...customers, customer]);
-  writeStorage(SESSION_KEY, {
-    id: customer.id,
-    name: customer.name,
-    email: customer.email,
-  });
-
-  return {
-    ok: true,
-    customer: {id: customer.id, name: customer.name, email: customer.email},
-  };
 }
 
-export function loginCustomer({email, password}) {
+export async function loginCustomer({email, password}) {
   const normalizedEmail = normalizeEmail(email);
 
   if (!normalizedEmail || !password) {
     return {ok: false, message: 'Täytä sähköposti ja salasana.'};
   }
 
-  const customers = getCustomers();
-  const customer = customers.find(entry => entry.email === normalizedEmail);
+  try {
+    const result = await loginCustomerRequest({
+      email: normalizedEmail,
+      password,
+    });
 
-  if (!customer || customer.password !== password) {
-    return {ok: false, message: 'Tarkista sähköposti ja salasana.'};
+    if (!result.ok || !result.customer) {
+      return result.ok
+        ? {ok: false, message: 'Tarkista sähköposti ja salasana.'}
+        : result;
+    }
+
+    writeStorage(SESSION_KEY, result.customer);
+    return {ok: true, customer: result.customer};
+  } catch {
+    return {
+      ok: false,
+      message: 'Yhteys palvelimeen epäonnistui. Yritä hetken kuluttua uudelleen.',
+    };
   }
-
-  const sessionCustomer = {
-    id: customer.id,
-    name: customer.name,
-    email: customer.email,
-  };
-
-  writeStorage(SESSION_KEY, sessionCustomer);
-
-  return {ok: true, customer: sessionCustomer};
 }
 
 export function logoutCustomer() {

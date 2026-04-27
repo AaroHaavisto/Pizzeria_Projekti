@@ -21,6 +21,7 @@ function AccountPage() {
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState(initialFormState);
   const [feedback, setFeedback] = useState({type: '', message: ''});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isRegistration = mode === 'register';
 
@@ -51,15 +52,40 @@ function AccountPage() {
     setFormData(initialFormState);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setIsSubmitting(true);
 
     if (isRegistration) {
-      const result = registerCustomer({
-        name: formData.name,
+      try {
+        const result = await registerCustomer({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        });
+
+        if (!result.ok) {
+          setFeedback({type: 'error', message: result.message});
+          return;
+        }
+
+        setFeedback({
+          type: 'success',
+          message: 'Tili luotu onnistuneesti. Voit nyt kirjautua sisään.',
+        });
+        setFormData(initialFormState);
+        setMode('login');
+        return;
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+
+    try {
+      const result = await loginCustomer({
         email: formData.email,
         password: formData.password,
-        confirmPassword: formData.confirmPassword,
       });
 
       if (!result.ok) {
@@ -67,27 +93,11 @@ function AccountPage() {
         return;
       }
 
-      setFeedback({
-        type: 'success',
-        message: 'Tili luotu onnistuneesti. Voit nyt kirjautua sisään.',
-      });
+      setFeedback({type: 'success', message: 'Kirjautuminen onnistui.'});
       setFormData(initialFormState);
-      setMode('login');
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const result = loginCustomer({
-      email: formData.email,
-      password: formData.password,
-    });
-
-    if (!result.ok) {
-      setFeedback({type: 'error', message: result.message});
-      return;
-    }
-
-    setFeedback({type: 'success', message: 'Kirjautuminen onnistui.'});
-    setFormData(initialFormState);
   }
 
   function handleLogout() {
@@ -140,6 +150,7 @@ function AccountPage() {
                   onChange={handleChange}
                   placeholder="Etunimi Sukunimi"
                   autoComplete="name"
+                  required
                 />
               </label>
             )}
@@ -199,8 +210,13 @@ function AccountPage() {
             <button
               className="button button--primary account-form__submit"
               type="submit"
+              disabled={isSubmitting}
             >
-              {isRegistration ? 'Luo tili' : 'Kirjaudu sisään'}
+              {isSubmitting
+                ? 'Lähetetään...'
+                : isRegistration
+                  ? 'Luo tili'
+                  : 'Kirjaudu sisään'}
             </button>
           </form>
         </section>
@@ -218,8 +234,8 @@ function AccountPage() {
                 <strong>Sähköposti:</strong> {currentCustomer.email}
               </p>
               <p>
-                Tilitiedot säilyvät tässä vaiheessa paikallisesti selaimessa.
-                Varsinainen API voidaan liittää tähän myöhemmin.
+                Tilitiedot tallennetaan palvelimen tietokantaan ja
+                kirjautumissessio säilytetään paikallisesti selaimessa.
               </p>
               <button
                 type="button"

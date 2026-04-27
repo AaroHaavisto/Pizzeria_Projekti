@@ -14,8 +14,8 @@ export function CustomerSessionProvider({children}) {
   const value = useMemo(
     () => ({
       customer,
-      registerCustomer(formData) {
-        const result = registerCustomerApi(formData);
+      async registerCustomer(formData) {
+        const result = await registerCustomerApi(formData);
 
         if (result.ok) {
           setCustomer(result.customer);
@@ -23,8 +23,8 @@ export function CustomerSessionProvider({children}) {
 
         return result;
       },
-      loginCustomer(formData) {
-        const result = loginCustomerApi(formData);
+      async loginCustomer(formData) {
+        const result = await loginCustomerApi(formData);
 
         if (result.ok) {
           setCustomer(result.customer);
