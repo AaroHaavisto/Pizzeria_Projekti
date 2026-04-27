@@ -1,16 +1,18 @@
+import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
-import {promises as fs} from 'node:fs';
-import path from 'node:path';
-import {fileURLToPath} from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import {
+  deleteMenuItem,
+  getAllMenuItems,
+  getMenuItemById,
+  initDatabase,
+  pingDatabase,
+  upsertMenuItem,
+} from './db.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'dev-admin-token';
-const DATA_PATH = path.join(__dirname, 'data', 'menu.json');
 
 const ALLOWED_MEAL_TYPES = new Set(['lunch', 'a_la_carte']);
 
@@ -22,7 +24,7 @@ app.get('/', (_req, res) => {
     .status(200)
     .type('text/plain')
     .send(
-      'Pizzeria Pro API is running. Try /api/health or /api/menu for JSON data.'
+      'Pizzeria Pro API is running. Try /api/health or /api/menu for database-backed menu data.'
     );
 });
 
@@ -35,10 +37,23 @@ function createHttpError(status, code, message, details = []) {
 }
 
 function sendError(res, err) {
-  const status = err.status || 500;
-  const code = err.code || 'INTERNAL_ERROR';
-  const message = err.message || 'Tuntematon virhe';
+  let status = err.status || 500;
+  let code = err.code || 'INTERNAL_ERROR';
+  let message = err.message || 'Tuntematon virhe';
   const details = Array.isArray(err.details) ? err.details : [];
+
+  const dbConnectionErrorCodes = new Set([
+    'ECONNREFUSED',
+    'PROTOCOL_CONNECTION_LOST',
+    'ER_ACCESS_DENIED_ERROR',
+    'ER_BAD_DB_ERROR',
+  ]);
+
+  if (status === 500 && dbConnectionErrorCodes.has(err.code)) {
+    code = 'DB_CONNECTION_ERROR';
+    message =
+      'Tietokantayhteys epäonnistui. Tarkista DB_HOST, DB_PORT, DB_USER, DB_PASSWORD ja DB_NAME.';
+  }
 
   return res.status(status).json({
     error: {
@@ -47,30 +62,6 @@ function sendError(res, err) {
       details,
     },
   });
-}
-
-async function readMenuData() {
-  const raw = await fs.readFile(DATA_PATH, 'utf8');
-  const parsed = JSON.parse(raw);
-
-  if (Array.isArray(parsed.items)) {
-    return {items: parsed.items};
-  }
-
-  if (Array.isArray(parsed.days)) {
-    return {
-      items: parsed.days.flatMap(day =>
-        Array.isArray(day.items) ? day.items : []
-      ),
-    };
-  }
-
-  return {items: []};
-}
-
-async function writeMenuData(payload) {
-  const serialized = `${JSON.stringify({items: payload.items || []}, null, 2)}\n`;
-  await fs.writeFile(DATA_PATH, serialized, 'utf8');
 }
 
 function validateItem(item, pathPrefix) {
@@ -128,14 +119,19 @@ function requireAdmin(req, res, next) {
   return next();
 }
 
-app.get('/api/health', (_req, res) => {
-  res.json({status: 'ok'});
+app.get('/api/health', async (_req, res) => {
+  try {
+    await pingDatabase();
+    res.json({status: 'ok', db: 'connected'});
+  } catch (err) {
+    sendError(res, err);
+  }
 });
 
 app.get('/api/menu', async (_req, res) => {
   try {
-    const data = await readMenuData();
-    res.json(data);
+    const items = await getAllMenuItems();
+    res.json({items});
   } catch (err) {
     sendError(res, err);
   }
@@ -154,8 +150,7 @@ app.get('/api/menu/today', async (_req, res) => {
 
 app.get('/api/menu/:itemId', async (req, res) => {
   try {
-    const data = await readMenuData();
-    const item = data.items.find(entry => entry.itemId === req.params.itemId);
+    const item = await getMenuItemById(req.params.itemId);
 
     if (!item) {
       throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
@@ -181,16 +176,7 @@ app.post('/api/menu', requireAdmin, async (req, res) => {
       );
     }
 
-    const data = await readMenuData();
-    const idx = data.items.findIndex(entry => entry.itemId === payload.itemId);
-
-    if (idx >= 0) {
-      data.items[idx] = payload;
-    } else {
-      data.items.push(payload);
-    }
-
-    await writeMenuData(data);
+    await upsertMenuItem(payload);
     res.status(201).json({message: 'Item upserted', item: payload});
   } catch (err) {
     sendError(res, err);
@@ -216,17 +202,12 @@ app.put('/api/menu/:itemId', requireAdmin, async (req, res) => {
       );
     }
 
-    const data = await readMenuData();
-    const idx = data.items.findIndex(
-      entry => entry.itemId === req.params.itemId
-    );
-
-    if (idx < 0) {
+    const existing = await getMenuItemById(req.params.itemId);
+    if (!existing) {
       throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
-    data.items[idx] = payload;
-    await writeMenuData(data);
+    await upsertMenuItem(payload);
 
     res.json({message: 'Item updated', item: payload});
   } catch (err) {
@@ -236,16 +217,13 @@ app.put('/api/menu/:itemId', requireAdmin, async (req, res) => {
 
 app.patch('/api/menu/:itemId', requireAdmin, async (req, res) => {
   try {
-    const data = await readMenuData();
-    const idx = data.items.findIndex(
-      entry => entry.itemId === req.params.itemId
-    );
-    if (idx < 0) {
+    const existing = await getMenuItemById(req.params.itemId);
+    if (!existing) {
       throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
     const merged = {
-      ...data.items[idx],
+      ...existing,
       ...req.body,
       itemId: req.params.itemId,
     };
@@ -260,8 +238,7 @@ app.patch('/api/menu/:itemId', requireAdmin, async (req, res) => {
       );
     }
 
-    data.items[idx] = merged;
-    await writeMenuData(data);
+    await upsertMenuItem(merged);
 
     res.json({message: 'Item patched', item: merged});
   } catch (err) {
@@ -271,17 +248,11 @@ app.patch('/api/menu/:itemId', requireAdmin, async (req, res) => {
 
 app.delete('/api/menu/:itemId', requireAdmin, async (req, res) => {
   try {
-    const data = await readMenuData();
-    const nextItems = data.items.filter(
-      entry => entry.itemId !== req.params.itemId
-    );
-
-    if (nextItems.length === data.items.length) {
+    const wasDeleted = await deleteMenuItem(req.params.itemId);
+    if (!wasDeleted) {
       throw createHttpError(404, 'ITEM_NOT_FOUND', 'Menu item not found');
     }
 
-    data.items = nextItems;
-    await writeMenuData(data);
     res.status(204).send();
   } catch (err) {
     sendError(res, err);
@@ -296,6 +267,14 @@ app.use((err, _req, res, next) => {
   return sendError(res, err);
 });
 
-app.listen(PORT, () => {
-  console.log(`API server running on http://localhost:${PORT}`);
+async function startServer() {
+  await initDatabase();
+  app.listen(PORT, () => {
+    console.log(`API server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer().catch(err => {
+  console.error('Failed to start API server', err);
+  process.exit(1);
 });
