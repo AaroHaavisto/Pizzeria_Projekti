@@ -19,6 +19,30 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+const MENU_IMAGE_BY_ID = {
+  1: '/src/assets/images/pizza-chicken-bbq.jpg',
+  2: '/src/assets/images/pizza-vegetariana.jpg',
+  3: '/src/assets/images/pizza-diavola.jpg',
+  4: '/src/assets/images/pizza-margherita.jpg',
+  5: '/src/assets/images/pizza-tonno.jpg',
+  6: '/src/assets/images/pizza-pepperoni.jpg',
+  7: '/src/assets/images/pizza-quattro-formaggi.jpg',
+  8: '/src/assets/images/pizza-vegetariana.jpg',
+  9: '/src/assets/images/pizza-prosciutto.jpg',
+  10: '/src/assets/images/pizza-capricciosa.jpg',
+  11: '/src/assets/images/pizza-hawaii.jpg',
+};
+
+function getDefaultMenuImage(item) {
+  const numericId = Number(item?.itemId);
+
+  if (Number.isInteger(numericId) && MENU_IMAGE_BY_ID[numericId]) {
+    return MENU_IMAGE_BY_ID[numericId];
+  }
+
+  return item?.image || null;
+}
+
 function normalizeEmail(email) {
   return String(email || '')
     .trim()
@@ -183,7 +207,7 @@ function mapRowToItem(row) {
       .map(entry => entry.trim())
       .filter(Boolean),
     mealType: Number(row.is_lunch_item) === 1 ? 'lunch' : 'a_la_carte',
-    image: row.image || null,
+    image: row.image || MENU_IMAGE_BY_ID[Number(row.menu_item_id)] || null,
   };
 }
 
@@ -198,10 +222,57 @@ export async function initDatabase() {
       dietary_info VARCHAR(255) NULL,
       is_lunch_item TINYINT(1) NOT NULL DEFAULT 0,
       available_weekday VARCHAR(50) NULL,
+      image VARCHAR(500) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  const [imageColumnRows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = 'menu_items'
+       AND column_name = 'image'
+     LIMIT 1`
+  );
+
+  if (imageColumnRows.length === 0) {
+    await pool.query(`ALTER TABLE menu_items ADD COLUMN image VARCHAR(500) NULL AFTER available_weekday`);
+  }
+
+  await pool.query(
+    `UPDATE menu_items
+     SET image = CASE menu_item_id
+       WHEN 1 THEN ?
+       WHEN 2 THEN ?
+       WHEN 3 THEN ?
+       WHEN 4 THEN ?
+       WHEN 5 THEN ?
+       WHEN 6 THEN ?
+       WHEN 7 THEN ?
+       WHEN 8 THEN ?
+       WHEN 9 THEN ?
+       WHEN 10 THEN ?
+       WHEN 11 THEN ?
+       ELSE image
+     END
+     WHERE menu_item_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+       AND (image IS NULL OR image = '')`,
+    [
+      MENU_IMAGE_BY_ID[1],
+      MENU_IMAGE_BY_ID[2],
+      MENU_IMAGE_BY_ID[3],
+      MENU_IMAGE_BY_ID[4],
+      MENU_IMAGE_BY_ID[5],
+      MENU_IMAGE_BY_ID[6],
+      MENU_IMAGE_BY_ID[7],
+      MENU_IMAGE_BY_ID[8],
+      MENU_IMAGE_BY_ID[9],
+      MENU_IMAGE_BY_ID[10],
+      MENU_IMAGE_BY_ID[11],
+    ]
+  );
 }
 
 export async function pingDatabase() {
@@ -237,6 +308,7 @@ export async function upsertMenuItem(item) {
   const priceValue = Number(item.priceCents || 0) / 100;
   const dietaryInfo = formatDietaryInfo(item.diet);
   const isLunchItem = item.mealType === 'lunch' ? 1 : 0;
+  const imageValue = getDefaultMenuImage(item);
 
   if (item.itemId != null && String(item.itemId).trim() !== '') {
     const [existingRows] = await pool.query(
@@ -247,7 +319,7 @@ export async function upsertMenuItem(item) {
     if (existingRows.length > 0) {
       await pool.query(
         `UPDATE menu_items
-         SET name = ?, description = ?, price = ?, category = ?, dietary_info = ?, is_lunch_item = ?, available_weekday = ?
+         SET name = ?, description = ?, price = ?, category = ?, dietary_info = ?, is_lunch_item = ?, available_weekday = ?, image = ?
          WHERE menu_item_id = ?`,
         [
           item.name,
@@ -257,6 +329,7 @@ export async function upsertMenuItem(item) {
           dietaryInfo || null,
           isLunchItem,
           item.availableWeekday ?? null,
+          imageValue,
           item.itemId,
         ]
       );
@@ -272,8 +345,9 @@ export async function upsertMenuItem(item) {
       category,
       dietary_info,
       is_lunch_item,
-      available_weekday
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      available_weekday,
+      image
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.name,
       item.description ?? null,
@@ -282,6 +356,7 @@ export async function upsertMenuItem(item) {
       dietaryInfo || null,
       isLunchItem,
       item.availableWeekday ?? null,
+      imageValue,
     ]
   );
 }
