@@ -1,5 +1,3 @@
-import {getStoredMenuData} from '../utils/menuStore';
-
 const MENU_API_ENDPOINT = '/api/menu';
 
 function formatPrice(priceCents, currency = 'EUR') {
@@ -30,17 +28,96 @@ function toCardItem(menuItem) {
   };
 }
 
+function extractMenuItems(menuData) {
+  if (Array.isArray(menuData?.items)) {
+    return menuData.items;
+  }
+
+  if (Array.isArray(menuData?.days)) {
+    return menuData.days.flatMap(day =>
+      Array.isArray(day.items) ? day.items : []
+    );
+  }
+
+  return [];
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = payload?.error?.message || 'Request failed';
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
 export async function getWeeklyMenuData() {
-  try {
-    const response = await fetch(MENU_API_ENDPOINT);
-    if (!response.ok) {
-      throw new Error(`Menu fetch failed: ${response.status}`);
+  return requestJson(MENU_API_ENDPOINT);
+}
+
+export async function saveMenuItem(menuItem) {
+  const method = menuItem?.itemId ? 'PUT' : 'POST';
+  const url = menuItem?.itemId
+    ? `${MENU_API_ENDPOINT}/${encodeURIComponent(menuItem.itemId)}`
+    : MENU_API_ENDPOINT;
+
+  return requestJson(url, {
+    method,
+    body: JSON.stringify(menuItem),
+  });
+}
+
+export async function deleteMenuItem(menuItemId) {
+  return requestJson(`${MENU_API_ENDPOINT}/${encodeURIComponent(menuItemId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function syncMenuData(menuData) {
+  const nextItems = extractMenuItems(menuData);
+  const currentPayload = await getWeeklyMenuData();
+  const currentItems = extractMenuItems(currentPayload);
+
+  const currentById = new Map(
+    currentItems.map(item => [String(item.itemId), item])
+  );
+  const nextById = new Set(nextItems.map(item => String(item.itemId)));
+
+  for (const item of nextItems) {
+    const itemId = String(item.itemId || '').trim();
+
+    if (itemId && currentById.has(itemId)) {
+      await requestJson(`${MENU_API_ENDPOINT}/${encodeURIComponent(itemId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(item),
+      });
+      continue;
     }
 
-    return await response.json();
-  } catch {
-    return getStoredMenuData();
+    await requestJson(MENU_API_ENDPOINT, {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
   }
+
+  for (const item of currentItems) {
+    const itemId = String(item.itemId);
+    if (!nextById.has(itemId)) {
+      await deleteMenuItem(itemId);
+    }
+  }
+
+  return getWeeklyMenuData();
 }
 
 export async function getWeeklyMenuSections() {

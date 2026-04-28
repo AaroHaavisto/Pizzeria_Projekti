@@ -154,39 +154,50 @@ function resolveMissingRequiredColumns(columns, providedColumns) {
     .map(column => column.name);
 }
 
-function parseDiet(value) {
-  try {
-    const parsed = JSON.parse(value ?? '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+function formatDietaryInfo(value) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join(',');
   }
+
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  return '';
 }
 
 function mapRowToItem(row) {
+  const priceValue = Number(row.price ?? row.price_cents ?? 0);
+  const priceCents = Number.isFinite(priceValue)
+    ? Math.round(priceValue < 100 ? priceValue * 100 : priceValue)
+    : 0;
+
   return {
-    itemId: row.item_id,
+    itemId: String(row.menu_item_id ?? row.item_id),
     name: row.name,
     description: row.description,
-    priceCents: row.price_cents,
-    currency: row.currency,
-    diet: parseDiet(row.diet_json),
-    mealType: row.meal_type,
-    image: row.image,
+    priceCents,
+    currency: row.currency || 'EUR',
+    diet: String(row.dietary_info || '')
+      .split(',')
+      .map(entry => entry.trim())
+      .filter(Boolean),
+    mealType: Number(row.is_lunch_item) === 1 ? 'lunch' : 'a_la_carte',
+    image: row.image || null,
   };
 }
 
 export async function initDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS menu_items (
-      item_id VARCHAR(100) PRIMARY KEY,
+      menu_item_id INT PRIMARY KEY AUTO_INCREMENT,
       name VARCHAR(255) NOT NULL,
       description TEXT NULL,
-      price_cents INT NOT NULL,
-      currency VARCHAR(10) NOT NULL,
-      diet_json LONGTEXT NOT NULL,
-      meal_type ENUM('lunch', 'a_la_carte') NOT NULL,
-      image VARCHAR(500) NULL,
+      price DECIMAL(10,2) NOT NULL,
+      category VARCHAR(100) NOT NULL DEFAULT 'pizza',
+      dietary_info VARCHAR(255) NULL,
+      is_lunch_item TINYINT(1) NOT NULL DEFAULT 0,
+      available_weekday VARCHAR(50) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -199,18 +210,18 @@ export async function pingDatabase() {
 
 export async function getAllMenuItems() {
   const [rows] = await pool.query(
-    `SELECT item_id, name, description, price_cents, currency, diet_json, meal_type, image
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday
      FROM menu_items
-     ORDER BY item_id ASC`
+     ORDER BY menu_item_id ASC`
   );
   return rows.map(mapRowToItem);
 }
 
 export async function getMenuItemById(itemId) {
   const [rows] = await pool.query(
-    `SELECT item_id, name, description, price_cents, currency, diet_json, meal_type, image
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday
      FROM menu_items
-     WHERE item_id = ?
+     WHERE menu_item_id = ?
      LIMIT 1`,
     [itemId]
   );
@@ -223,40 +234,60 @@ export async function getMenuItemById(itemId) {
 }
 
 export async function upsertMenuItem(item) {
+  const priceValue = Number(item.priceCents || 0) / 100;
+  const dietaryInfo = formatDietaryInfo(item.diet);
+  const isLunchItem = item.mealType === 'lunch' ? 1 : 0;
+
+  if (item.itemId != null && String(item.itemId).trim() !== '') {
+    const [existingRows] = await pool.query(
+      `SELECT menu_item_id FROM menu_items WHERE menu_item_id = ? LIMIT 1`,
+      [item.itemId]
+    );
+
+    if (existingRows.length > 0) {
+      await pool.query(
+        `UPDATE menu_items
+         SET name = ?, description = ?, price = ?, category = ?, dietary_info = ?, is_lunch_item = ?, available_weekday = ?
+         WHERE menu_item_id = ?`,
+        [
+          item.name,
+          item.description ?? null,
+          priceValue,
+          item.category || 'pizza',
+          dietaryInfo || null,
+          isLunchItem,
+          item.availableWeekday ?? null,
+          item.itemId,
+        ]
+      );
+      return;
+    }
+  }
+
   await pool.query(
     `INSERT INTO menu_items (
-      item_id,
       name,
       description,
-      price_cents,
-      currency,
-      diet_json,
-      meal_type,
-      image
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE
-      name = VALUES(name),
-      description = VALUES(description),
-      price_cents = VALUES(price_cents),
-      currency = VALUES(currency),
-      diet_json = VALUES(diet_json),
-      meal_type = VALUES(meal_type),
-      image = VALUES(image)`,
+      price,
+      category,
+      dietary_info,
+      is_lunch_item,
+      available_weekday
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
-      item.itemId,
       item.name,
       item.description ?? null,
-      item.priceCents,
-      item.currency,
-      JSON.stringify(item.diet || []),
-      item.mealType,
-      item.image ?? null,
+      priceValue,
+      item.category || 'pizza',
+      dietaryInfo || null,
+      isLunchItem,
+      item.availableWeekday ?? null,
     ]
   );
 }
 
 export async function deleteMenuItem(itemId) {
-  const [result] = await pool.query('DELETE FROM menu_items WHERE item_id = ?', [
+  const [result] = await pool.query('DELETE FROM menu_items WHERE menu_item_id = ?', [
     itemId,
   ]);
   return result.affectedRows > 0;

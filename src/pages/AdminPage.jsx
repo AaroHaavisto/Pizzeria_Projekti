@@ -44,7 +44,7 @@ function AdminPage() {
     return {itemCount};
   }, [menuData]);
 
-  function handleSave() {
+  async function handleSave() {
     try {
       const parsed = JSON.parse(jsonText);
 
@@ -54,10 +54,10 @@ function AdminPage() {
         );
       }
 
-      replaceMenuData(parsed);
+      await replaceMenuData(parsed);
       setMessage({
         type: 'success',
-        text: 'Menu tallennettu paikalliseen JSON-tilaan.',
+        text: 'Menu tallennettu tietokantaan.',
       });
     } catch (error) {
       setMessage({
@@ -67,9 +67,9 @@ function AdminPage() {
     }
   }
 
-  function handleReset() {
-    restoreDefaultMenu();
-    setMessage({type: 'success', text: 'Alkuperäinen JSON palautettu.'});
+  async function handleReset() {
+    await restoreDefaultMenu();
+    setMessage({type: 'success', text: 'Menu ladattu uudelleen tietokannasta.'});
   }
 
   function handleExport() {
@@ -117,7 +117,7 @@ function AdminPage() {
           <h1>Muokkaa ruokalistaa JSON-editorilla.</h1>
           <p className="hero__text admin-hero__text">
             Tämä sivu toimii yhtenä hallintanäkymänä, jossa sisältöä voi
-            muokata, tallentaa ja palauttaa ilman varsinaista APIa.
+            muokata, tallentaa ja palauttaa tietokannan kautta.
           </p>
           <div className="hero__actions">
             <button
@@ -192,8 +192,8 @@ function AdminPage() {
           <p className="section__label">Yhteenveto</p>
           <h2>{menuStats.itemCount} tuotetta</h2>
           <p>
-            Tallennus tapahtuu selaimen paikalliseen JSON-tilaan, joten sisältö
-            säilyy sivun välillä ilman backendin muutoksia.
+            Tallennus tapahtuu tietokantaan, joten sisältö säilyy sivun välillä
+            backendin kautta.
           </p>
 
           <div className="admin-preview">
