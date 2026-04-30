@@ -80,9 +80,9 @@ function MainPage() {
             <Link className="button button--primary" to="/menu">
               Katso menu
             </Link>
-            <a className="button button--secondary" href="#sijainti">
+            <Link className="button button--secondary" to="/location">
               Aukioloajat
-            </a>
+            </Link>
           </div>
           <div className="hero__subactions">
             <Link className="chip-link" to="/cart">
@@ -149,24 +149,6 @@ function MainPage() {
               </article>
             ))}
           </div>
-        </section>
-
-        <section className="section info-grid" id="sijainti">
-          <article className="info-card">
-            <p className="section__label">Aukioloajat</p>
-            <h2>Olemme auki joka päivä</h2>
-            <p>Ma-To 11:00-21:00</p>
-            <p>Pe-La 11:00-23:00</p>
-            <p>Su 12:00-20:00</p>
-          </article>
-
-          <article className="info-card info-card--dark">
-            <p className="section__label">Sijainti</p>
-            <h2>Keskustassa, lähellä kaikkea</h2>
-            <p>Keskuskatu 12, 00100 Helsinki</p>
-            <p>Puh. 010 123 4567</p>
-            <p>Sähköposti: tilaukset@pizzeriapro.fi</p>
-          </article>
         </section>
       </main>
     </>

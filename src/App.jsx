@@ -8,6 +8,7 @@ import {
 import MainPage from './pages/MainPage';
 import MenuPage from './pages/MenuPage';
 import AccountPage from './pages/AccountPage';
+import LocationPage from './pages/LocationPage';
 import {CustomerSessionProvider} from './contexts/CustomerSessionContext';
 import {MenuDataProvider} from './contexts/MenuDataContext';
 import {CartProvider} from './contexts/CartContext';
@@ -56,6 +57,7 @@ function App() {
             <Routes>
               <Route path="/" element={<MainPage />} />
               <Route path="/menu" element={<MenuPage />} />
+              <Route path="/location" element={<LocationPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/account" element={<AccountPage />} />
