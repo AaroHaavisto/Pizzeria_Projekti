@@ -22,6 +22,7 @@ function Navigation() {
           </div>
         </div>
         <Link to="/menu">Menu</Link>
+        <Link to="/location">Sijainti</Link>
         <Link to="/cart">
           Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
         </Link>
