@@ -5,10 +5,12 @@ import {
   deleteMenuItem,
   getAllMenuItems,
   getMenuItemById,
+  getRatings,
   initDatabase,
   loginCustomerAccount,
   pingDatabase,
   registerCustomerAccount,
+  updateRating,
   upsertMenuItem,
 } from './db.js';
 
@@ -160,6 +162,41 @@ app.get('/api/health', async (_req, res) => {
   try {
     await pingDatabase();
     res.json({status: 'ok', db: 'connected'});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.get('/api/ratings', async (_req, res) => {
+  try {
+    const ratings = await getRatings();
+    res.json({ratings});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.put('/api/ratings/:ratingId', requireAdmin, async (req, res) => {
+  try {
+    const {score, description} = req.body;
+    const ratingId = req.params.ratingId;
+
+    if (!score && !description) {
+      throw createHttpError(
+        400,
+        'VALIDATION_ERROR',
+        'At least one of score or description must be provided'
+      );
+    }
+
+    const wasUpdated = await updateRating(ratingId, {score, description});
+
+    if (!wasUpdated) {
+      throw createHttpError(404, 'RATING_NOT_FOUND', 'Rating not found');
+    }
+
+    const updatedRatings = await getRatings();
+    res.json({message: 'Rating updated', ratings: updatedRatings});
   } catch (err) {
     sendError(res, err);
   }

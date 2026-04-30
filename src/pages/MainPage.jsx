@@ -1,9 +1,13 @@
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {getFeaturedMenuCards} from '../api/menuApi';
+import {fetchRatings} from '../api/ratingsApi';
 import Navigation from '../components/Navigation';
 
 function MainPage() {
+  const fallbackRatings = [
+    {id: 1, score: '4.8/5', description: 'Asiakastyytyväisyys'},
+  ];
   const fallbackMenuItems = [
     {
       id: 'kana-pizza',
@@ -31,6 +35,71 @@ function MainPage() {
     },
   ];
   const [menuItems, setMenuItems] = useState(fallbackMenuItems);
+  const [ratings, setRatings] = useState(fallbackRatings);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRatings() {
+      try {
+        const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
+        const response = await fetch(`${base}/api/ratings`);
+        if (!response.ok) throw new Error('Failed to fetch ratings');
+        const data = await response.json();
+        if (mounted && Array.isArray(data.ratings)) {
+          setRatings(data.ratings);
+        }
+      } catch {
+        // Keep fallback ratings if API cannot be reached.
+      }
+    }
+
+    loadRatings();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        // Page became visible, refresh ratings
+        (async () => {
+          try {
+            const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
+            const response = await fetch(`${base}/api/ratings`);
+            if (response.ok) {
+              const data = await response.json();
+              if (Array.isArray(data.ratings)) {
+                setRatings(data.ratings);
+              }
+            }
+          } catch {
+            // Keep current ratings if refresh fails
+          }
+        })();
+      }
+    }
+
+    async function handleRatingsUpdate(_event) {
+      try {
+        const data = await fetchRatings();
+        if (Array.isArray(data)) {
+          setRatings(data);
+        }
+      } catch {
+        // keep existing ratings on failure
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('ratingsUpdated', handleRatingsUpdate);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('ratingsUpdated', handleRatingsUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -96,18 +165,12 @@ function MainPage() {
             className="hero__stats"
             aria-label="Pizzeria Pro - nopea yhteenveto"
           >
-            <li>
-              <strong>30 min</strong>
-              <span>Keskimääräinen toimitus</span>
-            </li>
-            <li>
-              <strong>24/7</strong>
-              <span>Verkkotilaus auki</span>
-            </li>
-            <li>
-              <strong>4.8/5</strong>
-              <span>Asiakastyytyväisyys</span>
-            </li>
+            {ratings.map(rating => (
+              <li key={rating.id}>
+                <strong>{rating.score}</strong>
+                <span>{rating.description}</span>
+              </li>
+            ))}
           </ul>
         </section>
       </header>

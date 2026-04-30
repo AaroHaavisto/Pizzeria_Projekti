@@ -273,6 +273,25 @@ export async function initDatabase() {
       MENU_IMAGE_BY_ID[11],
     ]
   );
+
+  // Create ratings table if it doesn't exist
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ratings (
+      rating_id INT PRIMARY KEY AUTO_INCREMENT,
+      score VARCHAR(10) NOT NULL,
+      description VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  // Seed initial rating data if table is empty
+  const [ratingRows] = await pool.query('SELECT COUNT(*) as count FROM ratings');
+  if (ratingRows[0].count === 0) {
+    await pool.query(`
+      INSERT INTO ratings (score, description) VALUES
+      (?, ?)
+    `, ['4.8/5', 'Asiakastyytyväisyys']);
+  }
 }
 
 export async function pingDatabase() {
@@ -706,4 +725,51 @@ export async function loginCustomerAccount({email, password}) {
   } finally {
     connection.release();
   }
+}
+
+export async function getRatings() {
+  const [rows] = await pool.query(
+    `SELECT rating_id, score, description
+     FROM ratings
+     ORDER BY rating_id ASC`
+  );
+  return rows.map(row => ({
+    id: row.rating_id,
+    score: row.score,
+    description: row.description,
+  }));
+}
+
+export async function updateRating(ratingId, {score, description}) {
+  if (!ratingId) {
+    throw new Error('ratingId is required');
+  }
+
+  const updates = [];
+  const values = [];
+
+  if (score != null) {
+    updates.push('score = ?');
+    values.push(String(score).trim());
+  }
+
+  if (description != null) {
+    updates.push('description = ?');
+    values.push(String(description).trim());
+  }
+
+  if (updates.length === 0) {
+    throw new Error('No fields to update');
+  }
+
+  values.push(ratingId);
+
+  const [result] = await pool.query(
+    `UPDATE ratings
+     SET ${updates.join(', ')}
+     WHERE rating_id = ?`,
+    values
+  );
+
+  return result.affectedRows > 0;
 }

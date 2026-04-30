@@ -1,7 +1,8 @@
-import {useEffect, useMemo, useState} from 'react';
+﻿import {useEffect, useMemo, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import {useMenuData} from '../contexts/MenuDataContext';
+import {fetchRatings, updateRating} from '../api/ratingsApi';
 import {isValidMenuJson} from '../utils/menuStore';
 import '../css/admin_style.css';
 
@@ -12,10 +13,28 @@ function AdminPage() {
     JSON.stringify(menuData, null, 2)
   );
   const [message, setMessage] = useState({type: '', text: ''});
+  const [ratings, setRatings] = useState([]);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
 
   useEffect(() => {
     setJsonText(JSON.stringify(menuData, null, 2));
   }, [menuData]);
+
+  useEffect(() => {
+    async function loadRatings() {
+      try {
+        setRatingsLoading(true);
+        const data = await fetchRatings();
+        setRatings(data);
+      } catch (error) {
+        console.error('Failed to load ratings:', error);
+      } finally {
+        setRatingsLoading(false);
+      }
+    }
+
+    loadRatings();
+  }, []);
 
   const isDevMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -35,8 +54,7 @@ function AdminPage() {
       ? menuData.items.length
       : Array.isArray(menuData.days)
         ? menuData.days.reduce(
-            (sum, day) =>
-              sum + (Array.isArray(day.items) ? day.items.length : 0),
+            (sum, day) => sum + (Array.isArray(day.items) ? day.items.length : 0),
             0
           )
         : 0;
@@ -70,6 +88,28 @@ function AdminPage() {
   async function handleReset() {
     await restoreDefaultMenu();
     setMessage({type: 'success', text: 'Menu ladattu uudelleen tietokannasta.'});
+  }
+
+  async function handleUpdateRating(ratingId, score, description) {
+    try {
+      const token = window.localStorage.getItem('adminToken') || 'dev-admin-token';
+      const updated = await updateRating(ratingId, {score, description}, token);
+      setRatings(updated);
+      setMessage({type: 'success', text: 'Arvostelu päivitetty.'});
+      // Broadcast update to other tabs/components and persist a timestamp
+      try {
+        window.dispatchEvent(new CustomEvent('ratingsUpdated', {detail: updated}));
+        // write a timestamp so other tabs receive a storage event
+        window.localStorage.setItem('ratingsUpdatedAt', String(Date.now()));
+      } catch (e) {
+        // ignore browser quirks
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Arvostelun päivitys epäonnistui.',
+      });
+    }
   }
 
   function handleExport() {
@@ -107,6 +147,12 @@ function AdminPage() {
     );
   }
 
+  const menuItems = Array.isArray(menuData.items)
+    ? menuData.items
+    : Array.isArray(menuData.days)
+      ? menuData.days.flatMap(day => (Array.isArray(day.items) ? day.items : []))
+      : [];
+
   return (
     <div className="admin-page">
       <header className="hero hero--admin">
@@ -116,8 +162,8 @@ function AdminPage() {
           <p className="eyebrow">Hallinta</p>
           <h1>Muokkaa ruokalistaa JSON-editorilla.</h1>
           <p className="hero__text admin-hero__text">
-            Tämä sivu toimii yhtenä hallintanäkymänä, jossa sisältöä voi
-            muokata, tallentaa ja palauttaa tietokannan kautta.
+            Tämä sivu toimii yhtenä hallintanäkymänä, jossa sisältöä voi muokata,
+            tallentaa ja palauttaa tietokannan kautta.
           </p>
           <div className="hero__actions">
             <button
@@ -202,23 +248,68 @@ function AdminPage() {
                 <strong>Kaikki tuotteet</strong>
               </div>
               <ul>
-                {(Array.isArray(menuData.items)
-                  ? menuData.items
-                  : Array.isArray(menuData.days)
-                    ? menuData.days.flatMap(day =>
-                        Array.isArray(day.items) ? day.items : []
-                      )
-                    : []
-                ).map(item => (
+                {menuItems.map(item => (
                   <li key={item.itemId}>
                     {item.name} -{' '}
-                    {(item.priceCents / 100).toFixed(2).replace('.', ',')} €
+                    {(item.priceCents / 100).toFixed(2).replace('.', ',')} 
                   </li>
                 ))}
               </ul>
             </article>
           </div>
         </aside>
+
+        <section className="admin-panel">
+          <div className="section__heading">
+            <p className="section__label">Arvostelut</p>
+            <h2>Muokkaa etusivun arvosteluja</h2>
+          </div>
+
+          {ratingsLoading ? (
+            <p>Ladataan arvosteluja...</p>
+          ) : (
+            <div className="ratings-editor">
+              {ratings.map(rating => (
+                <div key={rating.id} className="rating-item">
+                  <label>
+                    Pisteet (ID: {rating.id}):
+                    <input
+                      type="text"
+                      defaultValue={rating.score}
+                      onBlur={e => {
+                        const newScore = e.target.value;
+                        if (newScore !== rating.score) {
+                          handleUpdateRating(
+                            rating.id,
+                            newScore,
+                            rating.description
+                          );
+                        }
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Kuvaus:
+                    <input
+                      type="text"
+                      defaultValue={rating.description}
+                      onBlur={e => {
+                        const newDesc = e.target.value;
+                        if (newDesc !== rating.description) {
+                          handleUpdateRating(
+                            rating.id,
+                            rating.score,
+                            newDesc
+                          );
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
