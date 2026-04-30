@@ -19,11 +19,9 @@ function Navigation() {
           <div className="topbar__dropdown" role="menu" aria-label="Etusivu">
             <Link to="/">Yleiskatsaus</Link>
             <Link to="/#tarjoukset">Tarjoukset</Link>
-            <Link to="/location">Sijainti</Link>
           </div>
         </div>
         <Link to="/menu">Menu</Link>
-        <Link to="/location">Sijainti</Link>
         <Link to="/cart">
           Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
         </Link>

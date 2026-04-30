@@ -673,12 +673,12 @@ h1 {
 /* Location Page Styles */
 .location-hero {
   text-align: center;
-  padding: 20px 0;
+  padding: 4px 0;
 }
 
 .location-hero h1 {
   max-width: none;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .location-hero p {
@@ -686,6 +686,53 @@ h1 {
   margin: 0 auto;
   font-size: 1.1rem;
   color: rgba(77, 52, 41, 0.85);
+}
+
+.hero--location {
+  padding-top: 6px;
+  padding-bottom: 4px;
+}
+
+.hero__content--location {
+  padding-top: 4px;
+  padding-bottom: 0;
+  gap: 4px;
+}
+
+.section--location {
+  padding-top: 6px;
+  padding-bottom: 28px;
+}
+
+.location-map {
+  width: 100%;
+  height: min(68vh, 640px);
+  min-height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(206, 141, 103, 0.3);
+  box-shadow: 0 12px 28px rgba(79, 45, 31, 0.14);
+}
+
+.location-map__actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.location-map__marker {
+  background: transparent;
+  border: 0;
+}
+
+.location-map__marker-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: block;
+  border: 3px solid #fff7ef;
+  background: #d04f22;
+  box-shadow: 0 6px 16px rgba(63, 34, 21, 0.38);
 }
 
 .location-grid {
@@ -998,7 +1045,25 @@ h1 {
 
   /* Location Page Mobile */
   .location-hero {
-    padding: 16px 0;
+    padding: 2px 0;
+  }
+
+  .hero--location {
+    padding-top: 4px;
+    padding-bottom: 2px;
+  }
+
+  .hero__content--location {
+    padding-top: 2px;
+  }
+
+  .section--location {
+    padding-top: 4px;
+  }
+
+  .location-map {
+    min-height: 340px;
+    height: 56vh;
   }
 
   .location-hero h1 {
