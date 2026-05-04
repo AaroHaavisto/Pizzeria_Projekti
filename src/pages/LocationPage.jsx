@@ -52,7 +52,7 @@ function LocationPage() {
 
           <div className="location-map__actions">
             <a className="button button--primary" href={mapsUrl} target="_blank" rel="noopener noreferrer">
-              Open in Google Maps
+              Kartta
             </a>
           </div>
         </section>

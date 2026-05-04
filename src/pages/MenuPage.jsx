@@ -67,14 +67,14 @@ function toSavePizzaPayload(form) {
 
 function MenuPage() {
   const {customer} = useCustomerSession();
-  const {addToCart, items, itemCount, totalCents} = useCart();
+  const {addToCart, items, updateQuantity, itemCount, totalCents} = useCart();
   const [sections, setSections] = useState([]);
   const [menuItemsById, setMenuItemsById] = useState({});
   const [ratings, setRatings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
-  const [visibleItemsCount, setVisibleItemsCount] = useState(3);
+  const [menuFilter, setMenuFilter] = useState('all');
   const [editingPizza, setEditingPizza] = useState(null);
   const [pizzaForm, setPizzaForm] = useState(null);
   const [editingRating, setEditingRating] = useState(null);
@@ -117,7 +117,7 @@ function MenuPage() {
         }
       } catch {
         if (mounted) {
-          setLoadError('Menua ei voitu ladata API:sta. Naytetaan varadata.');
+          setLoadError('');
         }
       } finally {
         if (mounted) {
@@ -133,20 +133,31 @@ function MenuPage() {
     };
   }, []);
 
-  useEffect(() => {
-    setVisibleItemsCount(current => {
-      const minimum = 3;
-      if (items.length <= minimum) {
-        return items.length;
-      }
+  const allMenuItems = sections.flatMap(section => section.items);
+  const visibleMenuItems = allMenuItems.filter(item => {
+    if (menuFilter === 'veg') {
+      return Array.isArray(item.diet) && item.diet.includes('VEG');
+    }
 
-      return Math.min(Math.max(current, minimum), items.length);
-    });
-  }, [items.length]);
+    if (menuFilter === 'meat') {
+      return !(Array.isArray(item.diet) && item.diet.includes('VEG'));
+    }
 
-  const todaySection = sections.find(section => section.isToday) || sections[0];
-  const visibleCartItems = items.slice(0, visibleItemsCount);
-  const remainingCount = Math.max(0, items.length - visibleItemsCount);
+    return true;
+  });
+
+  const cartQuantityById = items.reduce((accumulator, item) => {
+    accumulator[item.id] = item.quantity;
+    return accumulator;
+  }, {});
+
+  const previewCartItems = items.filter(item => item.quantity > 0).slice(0, 3);
+  const filterHeading =
+    menuFilter === 'veg'
+      ? 'Vege pizzat'
+      : menuFilter === 'meat'
+        ? 'Lihapizzat'
+        : 'Kaikki pizzat';
 
   function openPizzaEditor(pizzaCard) {
     const sourceItem = menuItemsById[String(pizzaCard.id)];
@@ -226,8 +237,8 @@ function MenuPage() {
     }
   }
 
-  function showMoreCartItems() {
-    setVisibleItemsCount(current => Math.min(items.length, current + 10));
+  function handleQuantityChange(pizza, nextQuantity) {
+    updateQuantity(pizza.id, nextQuantity);
   }
 
   return (
@@ -239,27 +250,21 @@ function MenuPage() {
           <p className="eyebrow">Koko valikoima</p>
           <h1 id="menu">Löydä suosikkipizza jokaiseen nälkätasoon.</h1>
           <p className="hero__text menu-hero-text">
-            Näet päivän tarjonnan yhdellä silmäyksellä. Lisää tuotteet koriin
-            suoraan tästä näkymästä.
+            Suodata pizzat aineiden mukaan.
           </p>
           <div className="hero__actions">
-            <a
-              className="button button--primary"
-              href={`#${todaySection?.dayId || 'menu'}`}
-            >
-              Avaa tämän päivän lista
-            </a>
             <Link className="button button--secondary" to="/cart">
               Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
             </Link>
           </div>
+          
           <div className="hero__subactions">
             <Link className="chip-link" to="/">
               Etusivu
             </Link>
-            <a className="chip-link" href="#menu-lista">
-              Kaikki päivät
-            </a>
+            <Link className="chip-link" to="/location">
+              Kartta
+            </Link>
           </div>
         </section>
       </header>
@@ -270,12 +275,8 @@ function MenuPage() {
         <section className="menu-summary-card">
           <p className="section__label">Tilaus</p>
           <h2>Helppo nouto ja selkeä hinnoittelu</h2>
-          <p>
-            Ostoskorin summa päivittyy heti, ja erityisruokavaliot näkyvät
-            jokaisen tuotteen kortissa.
-          </p>
           <div className="menu-summary-card__stats">
-            <span>{sections.length} paivan lista</span>
+            <span>{allMenuItems.length} pizzaa listalla</span>
             <span>{itemCount} tuotetta korissa</span>
             <span>
               {(totalCents / 100).toFixed(2).replace('.', ',')} € yhteensä
@@ -285,21 +286,12 @@ function MenuPage() {
             <div className="menu-summary-card__cart-preview">
               <p className="section__label">Omat ostokset</p>
               <ul>
-                {visibleCartItems.map(item => (
+                {previewCartItems.map(item => (
                   <li key={item.id}>
                     {item.name} x{item.quantity}
                   </li>
                 ))}
               </ul>
-              {remainingCount > 0 ? (
-                <button
-                  className="menu-summary-card__more"
-                  type="button"
-                  onClick={showMoreCartItems}
-                >
-                  ...ja {remainingCount} lisää ostoskorissa.
-                </button>
-              ) : null}
             </div>
           ) : null}
           <div className="menu-summary-card__ratings">
@@ -331,35 +323,54 @@ function MenuPage() {
         </section>
 
         <div className="menu-days" id="menu-lista">
-          {sections.map(section => (
-            <section
-              key={section.dayId}
-              className={`day-section${section.isToday ? ' day-section--today' : ''}`}
-              id={section.dayId}
-            >
-              <div className="section__heading">
-                <p className="section__label">{section.label}</p>
-                <h2>
-                  {section.isToday ? 'Tämän päivän lista' : 'Päivän tarjonta'}
-                </h2>
+          <section className="day-section day-section--today" id="menu-pizzat">
+            <div className="section__heading">
+              <div className="menu-filter-inline">
+                <div className="menu-filter-inline__buttons">
+                  <button
+                    className={`chip-link chip-link--button${menuFilter === 'veg' ? ' chip-link--button--active' : ''}`}
+                    type="button"
+                    onClick={() => setMenuFilter('veg')}
+                  >
+                    Vege
+                  </button>
+                  <button
+                    className={`chip-link chip-link--button${menuFilter === 'meat' ? ' chip-link--button--active' : ''}`}
+                    type="button"
+                    onClick={() => setMenuFilter('meat')}
+                  >
+                    Liha
+                  </button>
+                  <button
+                    className={`chip-link chip-link--button${menuFilter === 'all' ? ' chip-link--button--active' : ''}`}
+                    type="button"
+                    onClick={() => setMenuFilter('all')}
+                  >
+                    Kaikki
+                  </button>
+                </div>
+                <h2>{filterHeading}</h2>
               </div>
+            </div>
 
-              <div className="pizza-grid">
-                {section.items.map(pizza => (
-                  <PizzaCard
-                    key={pizza.id}
-                    pizza={pizza}
-                    onAdd={addToCart}
-                    canEdit={canEditMenu}
-                    onEdit={openPizzaEditor}
-                  />
-                ))}
-              </div>
-              {section.items.length === 0 ? (
-                <p>Talle paivalle ei ole viela annoksia.</p>
-              ) : null}
-            </section>
-          ))}
+            <div className="pizza-grid">
+              {visibleMenuItems.map(pizza => (
+                <PizzaCard
+                  key={pizza.id}
+                  pizza={pizza}
+                  onAdd={addToCart}
+                  canEdit={canEditMenu}
+                  onEdit={openPizzaEditor}
+                  cartQuantity={cartQuantityById[pizza.id] || 0}
+                  onQuantityChange={handleQuantityChange}
+                  anchorId={`pizza-${pizza.id}`}
+                />
+              ))}
+            </div>
+            {visibleMenuItems.length === 0 ? (
+              <p>Pizzoja ei löytynyt valitulla suodatuksella.</p>
+            ) : null}
+          </section>
         </div>
       </main>
 

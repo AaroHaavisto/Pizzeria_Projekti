@@ -1,4 +1,5 @@
 import {getAdminRequestHeaders} from '../utils/adminAuth';
+import fallbackMenuData from '../data/menu.json';
 
 const MENU_API_ENDPOINT = '/api/menu';
 
@@ -26,6 +27,8 @@ function toCardItem(menuItem) {
     price: formatPrice(menuItem.priceCents, menuItem.currency),
     priceCents: menuItem.priceCents,
     currency: menuItem.currency,
+    diet: Array.isArray(menuItem.diet) ? menuItem.diet : [],
+    mealType: menuItem.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
     image: menuItem.image || '/src/assets/images/pizza-margherita.jpg',
   };
 }
@@ -65,7 +68,11 @@ async function requestJson(url, options = {}) {
 }
 
 export async function getWeeklyMenuData() {
-  return requestJson(MENU_API_ENDPOINT);
+  try {
+    return await requestJson(MENU_API_ENDPOINT);
+  } catch {
+    return fallbackMenuData;
+  }
 }
 
 export async function saveMenuItem(menuItem) {

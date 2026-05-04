@@ -27,13 +27,20 @@ function Navigation() {
           Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
         </Link>
         <div className="topbar__group">
-          <button className="topbar__trigger topbar__button" type="button">
+          <Link
+            className="topbar__trigger topbar__button"
+            to={customer ? '/account' : '/account?mode=login#kirjautuminen'}
+          >
             Käyttäjä
-          </button>
+          </Link>
           <div className="topbar__dropdown" role="menu" aria-label="Käyttäjä">
             {customer ? (
               <>
                 <p className="topbar__userline">Kirjautunut: {customer.name}</p>
+                <p className="topbar__userline">{customer.email}</p>
+                <Link className="topbar__dropdown-link" to="/account">
+                  Tilitiedot
+                </Link>
                 <button
                   className="topbar__button topbar__dropdown-button"
                   type="button"
@@ -43,7 +50,12 @@ function Navigation() {
                 </button>
               </>
             ) : (
-              <Link to="/account">Kirjaudu</Link>
+              <>
+                <Link to="/account?mode=login#kirjautuminen">Kirjaudu</Link>
+                <Link to="/account?mode=register#kirjautuminen">
+                  Rekisteröidy
+                </Link>
+              </>
             )}
           </div>
         </div>

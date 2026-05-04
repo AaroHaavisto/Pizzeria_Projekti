@@ -35,22 +35,41 @@ function formatCartItem(menuItem) {
 function sumCartTotals(items) {
   return items.reduce(
     (totals, item) => {
-      totals.quantity += item.quantity;
-      totals.priceCents += item.priceCents * item.quantity;
+      if (item.quantity > 0) {
+        totals.quantity += item.quantity;
+        totals.priceCents += item.priceCents * item.quantity;
+      }
       return totals;
     },
     {quantity: 0, priceCents: 0}
   );
 }
 
+function sortCartItems(items) {
+  return items
+    .map((item, index) => ({item, index}))
+    .sort((left, right) => {
+      const leftActive = left.item.quantity > 0 ? 0 : 1;
+      const rightActive = right.item.quantity > 0 ? 0 : 1;
+
+      if (leftActive !== rightActive) {
+        return leftActive - rightActive;
+      }
+
+      return left.index - right.index;
+    })
+    .map(entry => entry.item);
+}
+
 export function CartProvider({children}) {
   const [items, setItems] = useState(() => getInitialCartItems());
 
   function persist(nextItems) {
-    setItems(nextItems);
+    const orderedItems = sortCartItems(nextItems);
+    setItems(orderedItems);
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextItems));
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(orderedItems));
     }
   }
 
@@ -70,7 +89,7 @@ export function CartProvider({children}) {
           persist(
             items.map(item =>
               item.id === cartItem.id
-                ? {...item, quantity: item.quantity + 1}
+                ? {...item, quantity: Math.max(0, item.quantity) + 1}
                 : item
             )
           );
@@ -80,13 +99,12 @@ export function CartProvider({children}) {
         persist([...items, cartItem]);
       },
       updateQuantity(itemId, quantity) {
-        if (quantity <= 0) {
-          persist(items.filter(item => item.id !== itemId));
-          return;
-        }
-
         persist(
-          items.map(item => (item.id === itemId ? {...item, quantity} : item))
+          items.map(item =>
+            item.id === itemId
+              ? {...item, quantity: Math.max(0, Math.trunc(quantity))}
+              : item
+          )
         );
       },
       removeFromCart(itemId) {

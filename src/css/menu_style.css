@@ -18,13 +18,78 @@
 }
 
 .menu-page .hero__subactions {
-  margin-top: -4px;
+  margin-top: 4px;
+}
+
+.menu-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0 4px;
+  margin-top: 4px;
+  border-top: 1px dashed rgba(206, 141, 103, 0.4);
 }
 
 .pizza-card__topline {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.pizza-card {
+  position: relative;
+}
+
+.pizza-card__image-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 18px 18px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+}
+.pizza-card__price-wrap { display: flex; gap: 8px; align-items: baseline; }
+.pizza-card__price-normal { font-size: 0.86rem; color: #7a6b62; font-weight: 700; text-decoration: line-through; }
+.pizza-card__price-discount { font-size: 1.08rem; font-weight: 900; color: #b80f0f; }
+.pizza-card__price-current { font-size: 1.08rem; font-weight: 900; color: #b85a25; }
+
+.pizza-card__image-button img {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.pizza-card__image-button:hover img,
+.pizza-card__image-button:focus-visible img {
+  transform: translateY(-2px) scale(1.02);
+  filter: saturate(1.05) contrast(1.02);
+  box-shadow: 0 14px 26px rgba(80, 50, 33, 0.24);
+}
+
+.pizza-card__quantity-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(73, 41, 29, 0.9);
+  color: #fff8f0;
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(50, 28, 17, 0.24);
 }
 
 .pizza-card__actions {
@@ -38,6 +103,46 @@
 .pizza-card__edit {
   min-width: 84px;
   padding: 8px 12px;
+}
+
+.pizza-card__controls {
+  display: grid;
+  grid-template-columns: 36px minmax(62px, 88px) 36px;
+  align-items: center;
+  gap: 6px;
+}
+
+.pizza-card__step-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(171, 105, 66, 0.4);
+  background: rgba(255, 244, 232, 0.94);
+  color: #49291d;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pizza-card__quantity-input {
+  width: 100%;
+  min-height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(171, 105, 66, 0.3);
+  background: rgba(255, 251, 246, 0.96);
+  text-align: center;
+  font: inherit;
+  font-weight: 700;
+  color: #3f2a21;
+}
+
+.pizza-card__quantity-input::-webkit-outer-spin-button,
+.pizza-card__quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pizza-card__quantity-input[type='number'] {
+  appearance: textfield;
 }
 
 .menu-summary-card__ratings {
@@ -72,6 +177,11 @@
   border-radius: 12px;
   background: rgba(255, 250, 238, 0.94);
   border: 1px solid rgba(206, 141, 103, 0.34);
+}
+
+.menu-summary-card__cart-preview ul {
+  margin: 0;
+  padding-left: 18px;
 }
 
 .menu-modal-overlay {
@@ -167,9 +277,17 @@
   .menu-page .hero__subactions {
     margin-top: 0;
   }
+
+  .opening-hours-card {
+    justify-self: start;
+  }
 }
 
 @media (max-width: 700px) {
+  .pizza-card__image-button img {
+    height: 180px;
+  }
+
   .menu-modal__grid {
     grid-template-columns: 1fr;
   }

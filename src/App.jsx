@@ -9,6 +9,7 @@ import MainPage from './pages/MainPage';
 import MenuPage from './pages/MenuPage';
 import AccountPage from './pages/AccountPage';
 import LocationPage from './pages/LocationPage';
+import OfferBanner from './components/OfferBanner';
 import {CustomerSessionProvider} from './contexts/CustomerSessionContext';
 import {MenuDataProvider} from './contexts/MenuDataContext';
 import {CartProvider} from './contexts/CartContext';
@@ -54,6 +55,7 @@ function App() {
         <CartProvider>
           <Router>
             <RouteUiEffects />
+            <OfferBanner />
             <Routes>
               <Route path="/" element={<MainPage />} />
               <Route path="/menu" element={<MenuPage />} />

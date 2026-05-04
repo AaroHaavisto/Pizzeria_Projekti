@@ -283,6 +283,24 @@ h1 {
   flex-wrap: wrap;
 }
 
+.opening-hours-card {
+  justify-self: end;
+  width: min(100%, 320px);
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(206, 141, 103, 0.3);
+  background: rgba(255, 250, 243, 0.82);
+  box-shadow: 0 16px 34px rgba(150, 96, 61, 0.12);
+}
+
+.opening-hours-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(77, 52, 41, 0.85);
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -351,6 +369,29 @@ h1 {
   box-shadow: 0 0 0 2px rgba(255, 190, 128, 0.24);
 }
 
+.chip-link--button {
+  cursor: pointer;
+}
+
+.chip-link--button--active {
+  border-color: rgba(239, 146, 76, 0.6);
+  background: rgba(255, 230, 202, 0.96);
+  box-shadow: 0 0 0 2px rgba(255, 190, 128, 0.18);
+}
+
+.hero__utility-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.hero__control-stack {
+  display: grid;
+  gap: 10px;
+}
+
 .hero__stats {
   list-style: none;
   display: grid;
@@ -358,7 +399,53 @@ h1 {
   gap: 16px;
   padding: 0;
   margin: 10px 0 0;
+  width: auto;
 }
+
+/* Offer banner */
+.offer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  max-width: 100%;
+  margin: 8px auto 0;
+  background: linear-gradient(90deg, #fff7f5, #fffaf8);
+  border: 1px solid rgba(206,141,103,0.2);
+}
+
+.offer-banner--active {
+  background: linear-gradient(90deg, #ffefef, #fff7f6);
+  border: 2px solid #b84b3a;
+}
+
+.offer-banner__label {
+  font-weight: 900;
+  color: #000;
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.offer-banner__body {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.offer-banner__percent {
+  font-size: 1.05rem;
+  color: #b80f0f;
+  font-weight: 900;
+}
+
+.offer-banner__text {
+  color: #3f2a21;
+}
+
+.offer-banner__time {font-size: 0.95rem; color: #6b493a}
 
 .hero__stats li,
 .menu-card,
@@ -407,6 +494,7 @@ h1 {
   grid-template-columns: 1.4fr 1fr;
   gap: 24px;
   align-items: stretch;
+  padding-bottom: 28px;
 }
 
 .section__heading {
@@ -423,8 +511,11 @@ h1 {
 
 .feature-card {
   display: grid;
-  align-content: space-between;
-  min-height: 220px;
+  gap: 10px;
+  align-content: start;
+  min-height: 160px;
+  max-width: 300px;
+  justify-self: end;
   position: relative;
   overflow: hidden;
   background: linear-gradient(
@@ -644,6 +735,25 @@ h1 {
   display: grid;
   gap: 10px;
   align-content: start;
+}
+
+.menu-card--clickable {
+  cursor: pointer;
+  transition:
+    transform 170ms ease,
+    box-shadow 170ms ease,
+    border-color 170ms ease;
+}
+
+.menu-card--clickable:hover,
+.menu-card--clickable:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(176, 83, 35, 0.22);
+  border-color: rgba(239, 146, 76, 0.55);
+}
+
+.section--classics {
+  padding-top: 16px;
 }
 
 .menu-card span {
@@ -938,6 +1048,11 @@ h1 {
   .location-card {
     padding: 28px;
   }
+
+  .feature-card {
+    justify-self: start;
+    max-width: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1015,6 +1130,14 @@ h1 {
     gap: 10px;
   }
 
+  .hero__utility-row {
+    width: 100%;
+  }
+
+  .hero__control-stack {
+    width: 100%;
+  }
+
   .button {
     width: 100%;
     min-height: 44px;
@@ -1024,6 +1147,10 @@ h1 {
   .hero__subactions {
     width: 100%;
     flex-direction: column;
+  }
+
+  .hero__stats {
+    width: 100%;
   }
 
   .chip-link,

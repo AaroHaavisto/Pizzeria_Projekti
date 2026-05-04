@@ -3,8 +3,18 @@ import {Link} from 'react-router-dom';
 import {getFeaturedMenuCards} from '../api/menuApi';
 import {fetchRatings} from '../api/ratingsApi';
 import Navigation from '../components/Navigation';
+import {useCart} from '../contexts/CartContext';
+
+function toPriceCents(value) {
+  if (Number.isFinite(Number(value))) {
+    return Math.max(0, Math.round(Number(value)));
+  }
+
+  return 0;
+}
 
 function MainPage() {
+  const {addToCart} = useCart();
   const fallbackRatings = [
     {id: 1, score: '4.8/5', description: 'Asiakastyytyväisyys'},
   ];
@@ -14,24 +24,32 @@ function MainPage() {
       name: 'Kana-pizza',
       description: 'Kana, mozzarella, punasipuli ja talon tomaattikastike.',
       price: '12,50 €',
+      priceCents: 1250,
+      image: '/src/assets/images/pizza-chicken-bbq.jpg',
     },
     {
       id: 'diavola',
       name: 'Diavola',
       description: 'Salami piccante, chili ja mozzarella.',
       price: '13,20 €',
+      priceCents: 1320,
+      image: '/src/assets/images/pizza-diavola.jpg',
     },
     {
       id: 'tonno',
       name: 'Tonno',
       description: 'Tonnikala, kapris ja punasipuli.',
       price: '12,80 €',
+      priceCents: 1280,
+      image: '/src/assets/images/pizza-tonno.jpg',
     },
     {
       id: 'margherita',
       name: 'Margherita',
       description: 'Tomaatti, mozzarella, basilika ja oliiviöljy.',
       price: '9,90 €',
+      priceCents: 990,
+      image: '/src/assets/images/pizza-margherita.jpg',
     },
   ];
   const [menuItems, setMenuItems] = useState(fallbackMenuItems);
@@ -60,6 +78,17 @@ function MainPage() {
       mounted = false;
     };
   }, []);
+
+  function handleFeaturedClick(item) {
+    addToCart({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      image: item.image || '/src/assets/images/pizza-margherita.jpg',
+      price: item.price,
+      priceCents: toPriceCents(item.priceCents),
+    });
+  }
 
   useEffect(() => {
     function handleVisibilityChange() {
@@ -145,54 +174,68 @@ function MainPage() {
             Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet.
             Tilaa nouto, kotiinkuljetus tai tule syömään paikan päälle.
           </p>
-          <div className="hero__actions">
-            <Link className="button button--primary" to="/menu">
-              Katso menu
-            </Link>
-            <Link className="button button--secondary" to="/location">
-              Aukioloajat
-            </Link>
+          <div className="hero__utility-row">
+            <div className="hero__control-stack">
+              <div className="hero__actions">
+                <Link className="button button--primary" to="/menu">
+                  Katso menu
+                </Link>
+                <Link className="button button--secondary" to="/location">
+                  Kartta
+                </Link>
+              </div>
+              <div className="hero__subactions">
+                <Link className="chip-link" to="/cart">
+                  Ostoskori
+                </Link>
+                <a className="chip-link" href="#menu">
+                  Suosikit
+                </a>
+              </div>
+              <ul
+                className="hero__stats"
+                aria-label="Pizzeria Pro - nopea yhteenveto"
+              >
+                {ratings.map(rating => (
+                  <li key={rating.id}>
+                    <strong>{rating.score}</strong>
+                    <span>{rating.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="opening-hours-card">
+              <p className="section__label">Aukioloajat</p>
+              <h2>Pizzeria on auki</h2>
+              <ul>
+                <li>Ma - pe 6.00 - 18.00</li>
+                <li>La - su 8.00 - 15.00</li>
+              </ul>
+              <p>Ennen klo 13 saat lounaspizzat 10 % edullisemmin.</p>
+            </div>
           </div>
-          <div className="hero__subactions">
-            <Link className="chip-link" to="/cart">
-              Ostoskori
-            </Link>
-            <a className="chip-link" href="#menu">
-              Suosikit
-            </a>
-          </div>
-          <ul
-            className="hero__stats"
-            aria-label="Pizzeria Pro - nopea yhteenveto"
-          >
-            {ratings.map(rating => (
-              <li key={rating.id}>
-                <strong>{rating.score}</strong>
-                <span>{rating.description}</span>
-              </li>
-            ))}
-          </ul>
+          
         </section>
       </header>
 
       <main>
         <section className="section section--feature" id="tarjoukset">
           <div>
-            <p className="section__label">Tämän viikon tarjous</p>
-            <h2>Kaksi suosikkia yhdellä hinnalla</h2>
+            <p className="section__label">Lounastarjous</p>
+            <h2>10 % edullisempi ennen klo 13</h2>
             <p>
-              Tilaa Margherita ja Pepperoni yhdessä, niin saat toisen juoman
-              veloituksetta. Tarjous koskee nouto- ja verkkotilauksia.
+              Ennen klo 13 tilatut pizzat ovat 10 % tavallista halvempia.
+              Tarjous koskee nouto- ja verkkotilauksia.
             </p>
           </div>
           <div className="feature-card">
-            <span className="feature-card__badge">-15%</span>
-            <h3>Pizzeria Pro Duo</h3>
-            <p>Kaksi pizzaa, kaksi juomaa ja valkosipulidippi.</p>
+            <span className="feature-card__badge">-10%</span>
+            <h3>Lounaskello</h3>
+            <p>Valitse suosikkisi ja tilaa ennen yhtä.</p>
           </div>
         </section>
 
-        <section className="section" id="menu">
+        <section className="section section--classics" id="menu">
           <div className="section__heading">
             <p className="section__label">Suosituimmat</p>
             <h2>Valmiit klassikot</h2>
@@ -205,11 +248,16 @@ function MainPage() {
 
           <div className="menu-grid">
             {menuItems.map(item => (
-              <article className="menu-card" key={item.id || item.name}>
+              <Link
+                className="menu-card menu-card--clickable"
+                key={item.id || item.name}
+                to={`/menu#pizza-${item.id}`}
+                onClick={() => handleFeaturedClick(item)}
+              >
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
                 <span>{item.price}</span>
-              </article>
+              </Link>
             ))}
           </div>
         </section>

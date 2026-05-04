@@ -6,6 +6,7 @@ import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {submitOrder} from '../api/orderApi';
 import '../css/cart_style.css';
+import {isLunchOfferActive, applyLunchDiscount, formatEuro} from '../utils/offer';
 
 function formatEuros(priceCents) {
   return new Intl.NumberFormat('fi-FI', {
@@ -24,44 +25,60 @@ function CartPage() {
     removeFromCart,
     clearCart,
   } = useCart();
+  
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const activeItems = items.filter(item => item.quantity > 0);
+  const sortedItems = [...items].sort((left, right) => {
+    const leftActive = left.quantity > 0 ? 0 : 1;
+    const rightActive = right.quantity > 0 ? 0 : 1;
+
+    if (leftActive !== rightActive) {
+      return leftActive - rightActive;
+    }
+
+    return 0;
+  });
+  const offerActive = isLunchOfferActive();
+  const normalTotalCents = activeItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * it.quantity, 0);
+  const discountedTotalCents = activeItems.reduce(
+    (sum, it) => sum + applyLunchDiscount(Number(it.priceCents) || 0) * it.quantity,
+    0
+  );
 
   async function handleSubmitOrder() {
     try {
       setIsSubmitting(true);
       setErrorMessage('');
 
-      if (items.length === 0) {
+      if (activeItems.length === 0) {
         setErrorMessage('Kori on tyhjä. Lisää tuotteita ennen tilausta.');
         setIsSubmitting(false);
         return;
       }
 
-      // Map cart items to order format
-      const orderItems = items.map(item => ({
+      const orderItems = activeItems.map(item => ({
         menuItemId: Number(item.id),
         quantity: item.quantity,
         unitPrice: item.priceCents,
         notes: item.notes || '',
       }));
 
-      // Submit order
       const order = await submitOrder({
         customerId: customer?.id || null,
         totalCents,
         items: orderItems,
       });
 
-      // Show success modal
       setSuccessOrder(order);
 
-      // Clear cart after successful order
       clearCart();
     } catch (error) {
-      setErrorMessage(error.message || 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.');
+      setErrorMessage(
+        error.message || 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -105,10 +122,13 @@ function CartPage() {
             <h2>{itemCount} tuotetta valmiina</h2>
           </div>
 
-          {items.length > 0 ? (
+          {sortedItems.length > 0 ? (
             <div className="cart-list">
-              {items.map(item => (
-                <article className="cart-item" key={item.id}>
+              {sortedItems.map(item => (
+                <article
+                  className={`cart-item${item.quantity === 0 ? ' cart-item--inactive' : ''}`}
+                  key={item.id}
+                >
                   <img src={item.image} alt={item.name} />
                   <div className="cart-item__content">
                     <div className="cart-item__topline">
@@ -132,7 +152,23 @@ function CartPage() {
                       >
                         -
                       </button>
-                      <span>{item.quantity}</span>
+                      <input
+                        className="cart-item__quantity-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        value={item.quantity}
+                        onChange={event =>
+                          updateQuantity(
+                            item.id,
+                            event.target.value === ''
+                              ? 0
+                              : Number(event.target.value)
+                          )
+                        }
+                        aria-label={`${item.name} määrä`}
+                      />
                       <button
                         type="button"
                         className="quantity-button"
@@ -160,8 +196,17 @@ function CartPage() {
 
         <aside className="cart-summary">
           <p className="section__label">Yhteenveto</p>
-          <h2>{formatEuros(totalCents)}</h2>
-          <p>Valmis tilaus näkyy tässä koko ajan.</p>
+          {offerActive ? (
+            <>
+              <h2 className="cart-summary__discount">{formatEuro(discountedTotalCents)}</h2>
+              <p className="cart-summary__normal">Norm. {formatEuro(normalTotalCents)}</p>
+            </>
+          ) : (
+            <>
+              <h2>{formatEuro(normalTotalCents)}</h2>
+              <p>Valmis tilaus näkyy tässä koko ajan.</p>
+            </>
+          )}
 
           {errorMessage && (
             <p className="cart-error-message" role="alert">
@@ -174,7 +219,7 @@ function CartPage() {
               className="button button--primary"
               type="button"
               onClick={handleSubmitOrder}
-              disabled={items.length === 0 || isSubmitting}
+              disabled={activeItems.length === 0 || isSubmitting}
             >
               {isSubmitting ? 'Lähetetään...' : 'Tilaa nyt'}
             </button>

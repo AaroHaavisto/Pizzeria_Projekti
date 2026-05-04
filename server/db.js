@@ -300,6 +300,29 @@ export async function initDatabase() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS locations (
+      location_id INT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(255) NOT NULL,
+      address VARCHAR(255) NOT NULL,
+      is_default TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  const [locationRows] = await pool.query('SELECT COUNT(*) as count FROM locations');
+  if (locationRows[0].count === 0) {
+    // Determine available columns and include city if present in schema
+    const locationColumns = await getTableColumns(pool, 'locations');
+    const payload = {name: 'Pizzeria Pro', address: 'Urho Kekkosen katu 1, 00100 Helsinki', is_default: 1};
+    if (findColumn(locationColumns, 'city') && !findColumn(locationColumns, 'city').hasDefault) {
+      payload.city = 'Helsinki';
+    }
+
+    const insert = buildInsertQuery('locations', payload);
+    await pool.query(insert.sql, insert.values);
+  }
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       order_id INT PRIMARY KEY AUTO_INCREMENT,
       customer_user_id INT NULL DEFAULT NULL,
@@ -931,7 +954,7 @@ export async function createOrder({customerUserId, locationId = null, totalAmoun
   }
 
   if (resolvedLocationId == null) {
-    throw new Error('No location found for order creation');
+    throw new Error('Sijaintia ei löytynyt tilauksen luontia varten');
   }
 
   const [result] = await pool.query(
