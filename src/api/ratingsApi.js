@@ -1,4 +1,4 @@
-const API_BASE = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export async function fetchRatings() {
   const response = await fetch(`${API_BASE}/api/ratings`);

@@ -292,6 +292,44 @@ export async function initDatabase() {
       (?, ?)
     `, ['4.8/5', 'Asiakastyytyväisyys']);
   }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      order_id INT PRIMARY KEY AUTO_INCREMENT,
+      customer_user_id INT NULL DEFAULT NULL,
+      location_id INT NULL DEFAULT NULL,
+      order_type VARCHAR(50) NULL DEFAULT NULL,
+      status VARCHAR(50) DEFAULT 'pending',
+      pickup_time VARCHAR(50) NULL DEFAULT NULL,
+      total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  const ordersTableColumns = await getTableColumns(pool, 'orders');
+  if (
+    ordersTableColumns.length > 0 &&
+    !hasColumn(ordersTableColumns, 'location_id')
+  ) {
+    await pool.query(`
+      ALTER TABLE orders
+      ADD COLUMN location_id INT NULL DEFAULT NULL AFTER customer_user_id
+    `);
+  }
+
+  // Create order_items table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      order_item_id INT PRIMARY KEY AUTO_INCREMENT,
+      order_id INT NOT NULL,
+      menu_item_id INT NOT NULL,
+      quantity INT NOT NULL DEFAULT 1,
+      unit_price DECIMAL(10,2) NOT NULL,
+      notes VARCHAR(255) NULL,
+      FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+      FOREIGN KEY (menu_item_id) REFERENCES menu_items(menu_item_id) ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 }
 
 export async function pingDatabase() {
@@ -772,4 +810,92 @@ export async function updateRating(ratingId, {score, description}) {
   );
 
   return result.affectedRows > 0;
+}
+
+export async function createOrder({customerUserId, locationId = null, totalAmount}) {
+  let resolvedLocationId = Number.isInteger(locationId) && locationId > 0 ? locationId : null;
+
+  if (resolvedLocationId != null) {
+    const [locationRows] = await pool.query(
+      `SELECT location_id FROM locations WHERE location_id = ? LIMIT 1`,
+      [resolvedLocationId]
+    );
+
+    if (locationRows.length === 0) {
+      resolvedLocationId = null;
+    }
+  }
+
+  if (resolvedLocationId == null) {
+    const [defaultLocationRows] = await pool.query(
+      `SELECT location_id
+       FROM locations
+       WHERE is_default = 1
+       ORDER BY location_id ASC
+       LIMIT 1`
+    );
+
+    resolvedLocationId = defaultLocationRows[0]?.location_id ?? null;
+  }
+
+  if (resolvedLocationId == null) {
+    const [fallbackLocationRows] = await pool.query(
+      `SELECT location_id
+       FROM locations
+       ORDER BY location_id ASC
+       LIMIT 1`
+    );
+
+    resolvedLocationId = fallbackLocationRows[0]?.location_id ?? null;
+  }
+
+  if (resolvedLocationId == null) {
+    throw new Error('No location found for order creation');
+  }
+
+  const [result] = await pool.query(
+    `INSERT INTO orders (customer_user_id, location_id, total_amount, status) VALUES (?, ?, ?, 'pending')`,
+    [customerUserId || null, resolvedLocationId, totalAmount || 0]
+  );
+  return result.insertId;
+}
+
+export async function addOrderItem({orderId, menuItemId, quantity, unitPrice, notes}) {
+  await pool.query(
+    `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, notes) VALUES (?, ?, ?, ?, ?)`,
+    [orderId, menuItemId, quantity, unitPrice, notes || null]
+  );
+}
+
+export async function getOrder(orderId) {
+  const [orderRows] = await pool.query(
+    `SELECT order_id, customer_user_id, location_id, total_amount, status, created_at FROM orders WHERE order_id = ? LIMIT 1`,
+    [orderId]
+  );
+
+  if (orderRows.length === 0) {
+    return null;
+  }
+
+  const order = orderRows[0];
+  const [itemRows] = await pool.query(
+    `SELECT order_item_id, menu_item_id, quantity, unit_price, notes FROM order_items WHERE order_id = ? ORDER BY order_item_id ASC`,
+    [orderId]
+  );
+
+  return {
+    id: order.order_id,
+    customerId: order.customer_user_id,
+    locationId: order.location_id,
+    totalAmount: Number(order.total_amount),
+    status: order.status,
+    createdAt: order.created_at,
+    items: itemRows.map(item => ({
+      id: item.order_item_id,
+      menuItemId: item.menu_item_id,
+      quantity: item.quantity,
+      unitPrice: Number(item.unit_price),
+      notes: item.notes,
+    })),
+  };
 }

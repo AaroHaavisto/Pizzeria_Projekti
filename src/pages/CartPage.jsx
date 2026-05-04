@@ -1,7 +1,10 @@
+import {useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import OrderSuccessModal from '../components/OrderSuccessModal';
 import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {submitOrder} from '../api/orderApi';
 import '../css/cart_style.css';
 
 function formatEuros(priceCents) {
@@ -21,6 +24,48 @@ function CartPage() {
     removeFromCart,
     clearCart,
   } = useCart();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successOrder, setSuccessOrder] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  async function handleSubmitOrder() {
+    try {
+      setIsSubmitting(true);
+      setErrorMessage('');
+
+      if (items.length === 0) {
+        setErrorMessage('Kori on tyhjä. Lisää tuotteita ennen tilausta.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Map cart items to order format
+      const orderItems = items.map(item => ({
+        menuItemId: Number(item.id),
+        quantity: item.quantity,
+        unitPrice: item.priceCents,
+        notes: item.notes || '',
+      }));
+
+      // Submit order
+      const order = await submitOrder({
+        customerId: customer?.id || null,
+        totalCents,
+        items: orderItems,
+      });
+
+      // Show success modal
+      setSuccessOrder(order);
+
+      // Clear cart after successful order
+      clearCart();
+    } catch (error) {
+      setErrorMessage(error.message || 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="cart-page">
@@ -118,19 +163,40 @@ function CartPage() {
           <h2>{formatEuros(totalCents)}</h2>
           <p>Valmis tilaus näkyy tässä koko ajan.</p>
 
+          {errorMessage && (
+            <p className="cart-error-message" role="alert">
+              {errorMessage}
+            </p>
+          )}
+
           <div className="cart-summary__actions">
-            <Link className="button button--primary" to="/menu">
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={handleSubmitOrder}
+              disabled={items.length === 0 || isSubmitting}
+            >
+              {isSubmitting ? 'Lähetetään...' : 'Tilaa nyt'}
+            </button>
+            <Link className="button button--secondary" to="/menu">
               Jatka tilausta
             </Link>
-            <button
-              className="button button--secondary"
-              type="button"
-              onClick={clearCart}
-            >
-              Tyhjennä kori
-            </button>
           </div>
+
+          <button
+            className="chip-link chip-link--button"
+            type="button"
+            onClick={clearCart}
+            disabled={items.length === 0}
+          >
+            Tyhjennä kori
+          </button>
         </aside>
+
+        <OrderSuccessModal
+          order={successOrder}
+          onClose={() => setSuccessOrder(null)}
+        />
       </main>
     </div>
   );

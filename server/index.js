@@ -2,9 +2,12 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import {
+  addOrderItem,
+  createOrder,
   deleteMenuItem,
   getAllMenuItems,
   getMenuItemById,
+  getOrder,
   getRatings,
   initDatabase,
   loginCustomerAccount,
@@ -386,6 +389,76 @@ app.delete('/api/menu/:itemId', requireAdmin, async (req, res) => {
     }
 
     res.status(204).send();
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.use((err, _req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return sendError(res, err);
+});
+
+app.post('/api/orders', async (req, res) => {
+  try {
+    const {customerId, locationId, totalCents, items} = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      throw createHttpError(
+        400,
+        'VALIDATION_ERROR',
+        'Order must include at least one item'
+      );
+    }
+
+    // Validate each item
+    for (const item of items) {
+      if (!item.menuItemId || !Number.isInteger(item.quantity) || item.quantity < 1) {
+        throw createHttpError(
+          400,
+          'VALIDATION_ERROR',
+          'Each order item must have menuItemId and quantity >= 1'
+        );
+      }
+      if (!Number.isFinite(item.unitPrice) || item.unitPrice < 0) {
+        throw createHttpError(
+          400,
+          'VALIDATION_ERROR',
+          'Each order item must have valid unitPrice'
+        );
+      }
+    }
+
+    const totalAmount = Number(totalCents) / 100;
+
+    // Create order
+    const orderId = await createOrder({
+      customerUserId: customerId || null,
+      locationId: Number.isInteger(locationId) && locationId > 0 ? locationId : null,
+      totalAmount,
+    });
+
+    // Add order items
+    for (const item of items) {
+      await addOrderItem({
+        orderId,
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice / 100,
+        notes: item.notes,
+      });
+    }
+
+    // Fetch and return full order
+    const order = await getOrder(orderId);
+
+    res.status(201).json({
+      message: 'Order created successfully',
+      order,
+    });
   } catch (err) {
     sendError(res, err);
   }
