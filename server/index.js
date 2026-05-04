@@ -11,6 +11,7 @@ import {
   getRatings,
   initDatabase,
   loginCustomerAccount,
+  getUserByEmail,
   pingDatabase,
   registerCustomerAccount,
   updateRating,
@@ -150,15 +151,34 @@ function validateItem(item, pathPrefix) {
   return errors;
 }
 
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   const token = req.get('x-admin-token');
-  if (token !== ADMIN_TOKEN) {
+  const adminEmail = req.get('x-admin-email');
+
+  if (token === ADMIN_TOKEN) {
+    return next();
+  }
+
+  if (!adminEmail) {
     return sendError(
       res,
-      createHttpError(401, 'UNAUTHORIZED', 'Missing or invalid admin token')
+      createHttpError(401, 'UNAUTHORIZED', 'Missing admin credentials')
     );
   }
-  return next();
+
+  try {
+    const user = await getUserByEmail(adminEmail);
+    if (!user || String(user.role || '').toLowerCase() !== 'admin') {
+      return sendError(
+        res,
+        createHttpError(403, 'FORBIDDEN', 'Admin access required')
+      );
+    }
+
+    return next();
+  } catch (err) {
+    return sendError(res, err);
+  }
 }
 
 app.get('/api/health', async (_req, res) => {

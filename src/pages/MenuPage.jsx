@@ -2,25 +2,118 @@ import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import PizzaCard from '../components/PizzaCard';
-import {getWeeklyMenuSections} from '../api/menuApi';
+import {
+  getWeeklyMenuData,
+  getWeeklyMenuSections,
+  saveMenuItem,
+} from '../api/menuApi';
+import {fetchRatings, updateRating} from '../api/ratingsApi';
 import {useCart} from '../contexts/CartContext';
+import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {isAdminCustomer} from '../utils/adminAuth';
 import '../css/menu_style.css';
 
+function flattenMenuItems(menuData) {
+  if (Array.isArray(menuData?.items)) {
+    return menuData.items;
+  }
+
+  if (Array.isArray(menuData?.days)) {
+    return menuData.days.flatMap(day =>
+      Array.isArray(day.items) ? day.items : []
+    );
+  }
+
+  return [];
+}
+
+function createPizzaForm(item) {
+  return {
+    itemId: String(item.itemId || ''),
+    name: String(item.name || ''),
+    description: String(item.description || ''),
+    priceEuro: ((Number(item.priceCents || 0) || 0) / 100).toFixed(2),
+    dietText: Array.isArray(item.diet) ? item.diet.join(', ') : '',
+    mealType: item.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
+    image: String(item.image || ''),
+  };
+}
+
+function createRatingForm(rating) {
+  return {
+    id: rating.id,
+    score: String(rating.score || ''),
+    description: String(rating.description || ''),
+  };
+}
+
+function toSavePizzaPayload(form) {
+  const priceNumber = Number.parseFloat(String(form.priceEuro).replace(',', '.'));
+
+  return {
+    itemId: String(form.itemId || '').trim(),
+    name: String(form.name || '').trim(),
+    description: String(form.description || '').trim(),
+    priceCents: Number.isFinite(priceNumber) ? Math.max(0, Math.round(priceNumber * 100)) : 0,
+    currency: 'EUR',
+    diet: String(form.dietText || '')
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean),
+    mealType: form.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
+    image: String(form.image || '').trim(),
+  };
+}
+
 function MenuPage() {
+  const {customer} = useCustomerSession();
   const {addToCart, items, itemCount, totalCents} = useCart();
   const [sections, setSections] = useState([]);
+  const [menuItemsById, setMenuItemsById] = useState({});
+  const [ratings, setRatings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
   const [visibleItemsCount, setVisibleItemsCount] = useState(3);
+  const [editingPizza, setEditingPizza] = useState(null);
+  const [pizzaForm, setPizzaForm] = useState(null);
+  const [editingRating, setEditingRating] = useState(null);
+  const [ratingForm, setRatingForm] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const canEditMenu = isAdminCustomer(customer);
+
+  async function loadMenuData() {
+    const [nextSections, nextMenuData] = await Promise.all([
+      getWeeklyMenuSections(),
+      getWeeklyMenuData(),
+    ]);
+
+    const nextItems = flattenMenuItems(nextMenuData);
+    const nextById = nextItems.reduce((accumulator, item) => {
+      accumulator[String(item.itemId)] = item;
+      return accumulator;
+    }, {});
+
+    setSections(nextSections);
+    setMenuItemsById(nextById);
+  }
+
+  async function loadRatingsData() {
+    const nextRatings = await fetchRatings();
+    setRatings(Array.isArray(nextRatings) ? nextRatings : []);
+  }
 
   useEffect(() => {
     let mounted = true;
 
     async function loadMenu() {
       try {
-        const nextSections = await getWeeklyMenuSections();
+        setLoadError('');
+        await loadMenuData();
+        await loadRatingsData();
         if (mounted) {
-          setSections(nextSections);
+          setActionMessage('');
         }
       } catch {
         if (mounted) {
@@ -54,6 +147,84 @@ function MenuPage() {
   const todaySection = sections.find(section => section.isToday) || sections[0];
   const visibleCartItems = items.slice(0, visibleItemsCount);
   const remainingCount = Math.max(0, items.length - visibleItemsCount);
+
+  function openPizzaEditor(pizzaCard) {
+    const sourceItem = menuItemsById[String(pizzaCard.id)];
+    if (!sourceItem) {
+      setActionMessage('Valittua pizzaa ei loydy muokkausta varten.');
+      return;
+    }
+
+    setEditingPizza(pizzaCard);
+    setPizzaForm(createPizzaForm(sourceItem));
+  }
+
+  function closePizzaEditor() {
+    setEditingPizza(null);
+    setPizzaForm(null);
+  }
+
+  function openRatingEditor(rating) {
+    setEditingRating(rating);
+    setRatingForm(createRatingForm(rating));
+  }
+
+  function closeRatingEditor() {
+    setEditingRating(null);
+    setRatingForm(null);
+  }
+
+  async function handleSavePizza() {
+    if (!pizzaForm) {
+      return;
+    }
+
+    const payload = toSavePizzaPayload(pizzaForm);
+
+    if (!payload.itemId || !payload.name) {
+      setActionMessage('Pizzalla tulee olla tunnus ja nimi.');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await saveMenuItem(payload);
+      await loadMenuData();
+      setActionMessage(`Pizza ${payload.name} paivitetty.`);
+      closePizzaEditor();
+    } catch (error) {
+      setActionMessage(error.message || 'Pizzan paivitys epaonnistui.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleSaveRating() {
+    if (!ratingForm) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const updatedRatings = await updateRating(ratingForm.id, {
+        score: ratingForm.score,
+        description: ratingForm.description,
+      });
+      setRatings(updatedRatings);
+      setActionMessage('Arvosana paivitetty.');
+      try {
+        window.dispatchEvent(new CustomEvent('ratingsUpdated', {detail: updatedRatings}));
+        window.localStorage.setItem('ratingsUpdatedAt', String(Date.now()));
+      } catch {
+        // ignore browser quirks
+      }
+      closeRatingEditor();
+    } catch (error) {
+      setActionMessage(error.message || 'Arvosanan paivitys epaonnistui.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   function showMoreCartItems() {
     setVisibleItemsCount(current => Math.min(items.length, current + 10));
@@ -131,6 +302,32 @@ function MenuPage() {
               ) : null}
             </div>
           ) : null}
+          <div className="menu-summary-card__ratings">
+            <p className="section__label">Arvosanat</p>
+            <ul>
+              {ratings.map(rating => (
+                <li key={rating.id}>
+                  <span>
+                    <strong>{rating.score}</strong> {rating.description}
+                  </span>
+                  {canEditMenu ? (
+                    <button
+                      type="button"
+                      className="button button--secondary menu-summary-card__edit-button"
+                      onClick={() => openRatingEditor(rating)}
+                    >
+                      Muokkaa
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+          {actionMessage ? (
+            <p className="menu-summary-card__message" role="status">
+              {actionMessage}
+            </p>
+          ) : null}
         </section>
 
         <div className="menu-days" id="menu-lista">
@@ -149,7 +346,13 @@ function MenuPage() {
 
               <div className="pizza-grid">
                 {section.items.map(pizza => (
-                  <PizzaCard key={pizza.id} pizza={pizza} onAdd={addToCart} />
+                  <PizzaCard
+                    key={pizza.id}
+                    pizza={pizza}
+                    onAdd={addToCart}
+                    canEdit={canEditMenu}
+                    onEdit={openPizzaEditor}
+                  />
                 ))}
               </div>
               {section.items.length === 0 ? (
@@ -159,6 +362,175 @@ function MenuPage() {
           ))}
         </div>
       </main>
+
+      {editingPizza && pizzaForm ? (
+        <div className="menu-modal-overlay" onClick={closePizzaEditor}>
+          <div className="menu-modal" onClick={event => event.stopPropagation()}>
+            <div className="menu-modal__header">
+              <h2>Muokkaa pizzaa</h2>
+              <button type="button" className="menu-modal__close" onClick={closePizzaEditor}>
+                x
+              </button>
+            </div>
+            <div className="menu-modal__body">
+              <label>
+                Nimi
+                <input
+                  type="text"
+                  value={pizzaForm.name}
+                  onChange={event =>
+                    setPizzaForm(current => ({...current, name: event.target.value}))
+                  }
+                />
+              </label>
+              <label>
+                Kuvaus
+                <textarea
+                  rows="3"
+                  value={pizzaForm.description}
+                  onChange={event =>
+                    setPizzaForm(current => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <div className="menu-modal__grid">
+                <label>
+                  Hinta (EUR)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={pizzaForm.priceEuro}
+                    onChange={event =>
+                      setPizzaForm(current => ({
+                        ...current,
+                        priceEuro: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Tyyppi
+                  <select
+                    value={pizzaForm.mealType}
+                    onChange={event =>
+                      setPizzaForm(current => ({
+                        ...current,
+                        mealType: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="lunch">Lounas</option>
+                    <option value="a_la_carte">A la carte</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Diet/allergeenit (pilkulla eroteltuna)
+                <input
+                  type="text"
+                  value={pizzaForm.dietText}
+                  onChange={event =>
+                    setPizzaForm(current => ({...current, dietText: event.target.value}))
+                  }
+                />
+              </label>
+              <label>
+                Kuvan polku
+                <input
+                  type="text"
+                  value={pizzaForm.image}
+                  onChange={event =>
+                    setPizzaForm(current => ({...current, image: event.target.value}))
+                  }
+                />
+              </label>
+              <img
+                className="menu-modal__preview"
+                src={pizzaForm.image || '/src/assets/images/pizza-margherita.jpg'}
+                alt={`${pizzaForm.name || 'Pizza'} esikatselu`}
+              />
+            </div>
+            <div className="menu-modal__actions">
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={closePizzaEditor}
+                disabled={isSaving}
+              >
+                Peruuta
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={handleSavePizza}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Tallennetaan...' : 'Tallenna'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingRating && ratingForm ? (
+        <div className="menu-modal-overlay" onClick={closeRatingEditor}>
+          <div className="menu-modal menu-modal--small" onClick={event => event.stopPropagation()}>
+            <div className="menu-modal__header">
+              <h2>Muokkaa arvosanaa</h2>
+              <button type="button" className="menu-modal__close" onClick={closeRatingEditor}>
+                x
+              </button>
+            </div>
+            <div className="menu-modal__body">
+              <label>
+                Pisteet
+                <input
+                  type="text"
+                  value={ratingForm.score}
+                  onChange={event =>
+                    setRatingForm(current => ({...current, score: event.target.value}))
+                  }
+                />
+              </label>
+              <label>
+                Kuvaus
+                <input
+                  type="text"
+                  value={ratingForm.description}
+                  onChange={event =>
+                    setRatingForm(current => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <div className="menu-modal__actions">
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={closeRatingEditor}
+                disabled={isSaving}
+              >
+                Peruuta
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={handleSaveRating}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Tallennetaan...' : 'Tallenna'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

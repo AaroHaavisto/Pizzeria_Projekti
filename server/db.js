@@ -34,6 +34,12 @@ const MENU_IMAGE_BY_ID = {
 };
 
 function getDefaultMenuImage(item) {
+  const customImage = String(item?.image || '').trim();
+
+  if (customImage) {
+    return customImage;
+  }
+
   const numericId = Number(item?.itemId);
 
   if (Number.isInteger(numericId) && MENU_IMAGE_BY_ID[numericId]) {
@@ -338,7 +344,7 @@ export async function pingDatabase() {
 
 export async function getAllMenuItems() {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image
      FROM menu_items
      ORDER BY menu_item_id ASC`
   );
@@ -347,7 +353,7 @@ export async function getAllMenuItems() {
 
 export async function getMenuItemById(itemId) {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image
      FROM menu_items
      WHERE menu_item_id = ?
      LIMIT 1`,
@@ -616,11 +622,18 @@ export async function registerCustomerAccount({name, email, password}) {
 
     await connection.commit();
 
-    return {
+    const result = {
       id: userId,
       name: normalizedName,
       email: normalizedEmail,
     };
+
+    // Include role when users table has a role column
+    if (roleColumn) {
+      result.role = userPayload[roleColumn] || 'customer';
+    }
+
+    return result;
   } catch (error) {
     try {
       await connection.rollback();
@@ -673,6 +686,14 @@ export async function loginCustomerAccount({email, password}) {
     if (usersNameColumn) {
       selectColumns.push(usersNameColumn);
     }
+    const userRoleColumn = pickFirstExisting(usersColumns, [
+      'role',
+      'user_role',
+      'type',
+    ]);
+    if (userRoleColumn) {
+      selectColumns.push(userRoleColumn);
+    }
 
     const [rows] = await connection.query(
       `SELECT ${selectColumns.join(', ')}
@@ -697,6 +718,10 @@ export async function loginCustomerAccount({email, password}) {
       name: usersNameColumn ? user[usersNameColumn] : null,
       email: user[emailColumnName],
     };
+
+    if (userRoleColumn) {
+      customer.role = user[userRoleColumn] || 'customer';
+    }
 
     const customerProfilesExists = await tableExists(connection, 'customer_profiles');
     if (customerProfilesExists && customer.id != null) {
@@ -760,6 +785,62 @@ export async function loginCustomerAccount({email, password}) {
     }
 
     return customer;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function getUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const connection = await pool.getConnection();
+
+  try {
+    const usersColumns = await getTableColumns(connection, 'users');
+    if (usersColumns.length === 0) {
+      return null;
+    }
+
+    const userIdColumnName = pickFirstExisting(usersColumns, [
+      'id',
+      'user_id',
+      'uuid',
+    ]);
+    const emailColumnName = pickFirstExisting(usersColumns, [
+      'email',
+      'username',
+      'user_email',
+    ]);
+    const usersNameColumn = pickFirstExisting(usersColumns, ['name', 'full_name']);
+    const roleColumn = pickFirstExisting(usersColumns, [
+      'role',
+      'user_role',
+      'type',
+    ]);
+
+    const selectColumns = [emailColumnName];
+    if (userIdColumnName) selectColumns.push(userIdColumnName);
+    if (usersNameColumn) selectColumns.push(usersNameColumn);
+    if (roleColumn) selectColumns.push(roleColumn);
+
+    const [rows] = await connection.query(
+      `SELECT ${selectColumns.join(', ')} FROM users WHERE ${emailColumnName} = ? LIMIT 1`,
+      [normalizedEmail]
+    );
+
+    if (rows.length === 0) return null;
+
+    const row = rows[0];
+    const user = {
+      id: userIdColumnName ? row[userIdColumnName] : null,
+      name: usersNameColumn ? row[usersNameColumn] : null,
+      email: row[emailColumnName],
+    };
+
+    if (roleColumn) {
+      user.role = row[roleColumn] || 'customer';
+    }
+
+    return user;
   } finally {
     connection.release();
   }

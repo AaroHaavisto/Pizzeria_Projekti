@@ -1,6 +1,6 @@
 import '../css/menu_style.css';
 
-function PizzaCard({pizza, onAdd}) {
+function PizzaCard({pizza, onAdd, canEdit = false, onEdit}) {
   return (
     <article className="pizza-card">
       <div className="pizza-card__image-wrap">
@@ -14,13 +14,24 @@ function PizzaCard({pizza, onAdd}) {
         <p>{pizza.description}</p>
         <div className="pizza-card__meta">
           <span className="pizza-card__price">{pizza.price}</span>
-          <button
-            type="button"
-            className="button button--secondary pizza-card__button"
-            onClick={() => onAdd?.(pizza)}
-          >
-            Lisää koriin
-          </button>
+          <div className="pizza-card__actions">
+            {canEdit ? (
+              <button
+                type="button"
+                className="button button--secondary pizza-card__edit"
+                onClick={() => onEdit?.(pizza)}
+              >
+                Muokkaa
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="button button--secondary pizza-card__button"
+              onClick={() => onAdd?.(pizza)}
+            >
+              Lisää koriin
+            </button>
+          </div>
         </div>
       </div>
     </article>

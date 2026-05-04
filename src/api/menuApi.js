@@ -1,3 +1,5 @@
+import {getAdminRequestHeaders} from '../utils/adminAuth';
+
 const MENU_API_ENDPOINT = '/api/menu';
 
 function formatPrice(priceCents, currency = 'EUR') {
@@ -46,6 +48,7 @@ async function requestJson(url, options = {}) {
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...getAdminRequestHeaders(),
       ...(options.headers || {}),
     },
     ...options,
