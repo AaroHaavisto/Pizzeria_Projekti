@@ -262,7 +262,6 @@ function MainPage() {
           <div>
             <p className="section__label">{offer.label}</p>
             <h2>{offer.title}</h2>
-            <p>{offerActive ? offer.activeText : offer.inactiveText}</p>
           </div>
           <div className="feature-card">
             <span className="feature-card__badge">-{discountPercent}%</span>
