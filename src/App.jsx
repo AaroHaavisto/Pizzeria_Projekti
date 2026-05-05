@@ -57,7 +57,7 @@ function App() {
         <OfferProvider>
           <MenuDataProvider>
             <CartProvider>
-              <Router>
+              <Router basename={import.meta.env.BASE_URL}>
                 <RouteUiEffects />
                 <OfferBanner />
                 <Routes>

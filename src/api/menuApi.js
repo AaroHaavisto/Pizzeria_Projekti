@@ -1,5 +1,6 @@
 import {getAdminRequestHeaders} from '../utils/adminAuth';
 import fallbackMenuData from '../data/menu.json';
+import {resolveImageUrl} from '../utils/imageUrls';
 
 const MENU_API_ENDPOINT = '/api/menu';
 
@@ -40,7 +41,7 @@ function toCardItem(menuItem) {
     currency: menuItem.currency,
     diet: Array.isArray(menuItem.diet) ? menuItem.diet : [],
     mealType: menuItem.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
-    image: menuItem.image || '/src/assets/images/pizza-margherita.jpg',
+    image: resolveImageUrl(menuItem.image || '/src/assets/images/pizza-margherita.jpg'),
   };
 }
 

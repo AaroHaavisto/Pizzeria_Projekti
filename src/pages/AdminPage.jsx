@@ -6,6 +6,7 @@ import {useMenuData} from '../contexts/MenuDataContext';
 import {fetchRatings, updateRating} from '../api/ratingsApi';
 import {isAdminCustomer} from '../utils/adminAuth';
 import {isValidMenuJson} from '../utils/menuStore';
+import {resolveImageUrl} from '../utils/imageUrls';
 import '../css/admin_style.css';
 
 const IMAGE_OPTIONS = [
@@ -273,7 +274,7 @@ function AdminPage() {
                 <div className="menu-editor__media">
                   <img
                     className="menu-editor__preview"
-                    src={item.image || '/src/assets/images/pizza-margherita.jpg'}
+                    src={resolveImageUrl(item.image || '/src/assets/images/pizza-margherita.jpg')}
                     alt={item.name || 'Pizza'}
                   />
                   <label className="menu-editor__field">

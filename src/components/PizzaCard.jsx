@@ -1,6 +1,7 @@
 import '../css/menu_style.css';
 import {useOffer} from '../contexts/OfferContext';
 import {isLunchOfferActive, applyLunchDiscount, formatEuro} from '../utils/offer';
+import {resolveImageUrl} from '../utils/imageUrls';
 
 /**
  * Pizza menu card component.
@@ -45,7 +46,7 @@ function PizzaCard({
             {cartQuantity}
           </span>
         ) : null}
-        <img src={pizza.image} alt={pizza.name + ' pizza'} loading="lazy" />
+        <img src={resolveImageUrl(pizza.image)} alt={pizza.name + ' pizza'} loading="lazy" />
       </button>
       <div className="pizza-card__content">
         <div className="pizza-card__topline">

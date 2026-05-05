@@ -13,6 +13,7 @@ import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useOffer} from '../contexts/OfferContext';
 import {isAdminCustomer} from '../utils/adminAuth';
 import {isLunchOfferActive} from '../utils/offer';
+import {resolveImageUrl} from '../utils/imageUrls';
 import '../css/menu_style.css';
 
 function flattenMenuItems(menuData) {
@@ -546,7 +547,7 @@ function MenuPage() {
               </label>
               <img
                 className="menu-modal__preview"
-                src={pizzaForm.image || '/src/assets/images/pizza-margherita.jpg'}
+                src={resolveImageUrl(pizzaForm.image || '/src/assets/images/pizza-margherita.jpg')}
                 alt={`${pizzaForm.name || 'Pizza'} esikatselu`}
               />
             </div>

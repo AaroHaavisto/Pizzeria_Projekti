@@ -7,6 +7,7 @@ import Navigation from '../components/Navigation';
 import {useCart} from '../contexts/CartContext';
 import {useOffer} from '../contexts/OfferContext';
 import {applyLunchDiscount, isLunchOfferActive} from '../utils/offer';
+import {resolveImageUrl} from '../utils/imageUrls';
 
 /**
  * Converts numeric price value to cents.
@@ -142,7 +143,7 @@ function MainPage() {
       id: item.id,
       name: item.name,
       description: item.description,
-      image: item.image || '/src/assets/images/pizza-margherita.jpg',
+      image: resolveImageUrl(item.image || '/src/assets/images/pizza-margherita.jpg'),
       price: item.price,
       priceCents: toPriceCents(item.priceCents),
     });
