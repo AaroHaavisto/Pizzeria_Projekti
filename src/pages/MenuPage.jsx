@@ -10,7 +10,9 @@ import {
 import {fetchRatings, updateRating} from '../api/ratingsApi';
 import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {useOffer} from '../contexts/OfferContext';
 import {isAdminCustomer} from '../utils/adminAuth';
+import {isLunchOfferActive} from '../utils/offer';
 import '../css/menu_style.css';
 
 function flattenMenuItems(menuData) {
@@ -65,9 +67,34 @@ function toSavePizzaPayload(form) {
   };
 }
 
+function createOfferForm(offer) {
+  return {
+    label: String(offer.label || ''),
+    title: String(offer.title || ''),
+    discountPercent: String(Number(offer.discountPercent) || 0),
+    startTime: String(offer.startTime || '11:00'),
+    endTime: String(offer.endTime || '13:00'),
+    activeText: String(offer.activeText || ''),
+    inactiveText: String(offer.inactiveText || ''),
+  };
+}
+
+function toOfferPayload(form) {
+  return {
+    label: String(form.label || '').trim(),
+    title: String(form.title || '').trim(),
+    discountPercent: Number.parseFloat(String(form.discountPercent).replace(',', '.')),
+    startTime: String(form.startTime || '').trim(),
+    endTime: String(form.endTime || '').trim(),
+    activeText: String(form.activeText || '').trim(),
+    inactiveText: String(form.inactiveText || '').trim(),
+  };
+}
+
 function MenuPage() {
   const {customer} = useCustomerSession();
   const {addToCart, items, updateQuantity, itemCount, totalCents} = useCart();
+  const {offer, saveOffer} = useOffer();
   const [sections, setSections] = useState([]);
   const [menuItemsById, setMenuItemsById] = useState({});
   const [ratings, setRatings] = useState([]);
@@ -79,9 +106,13 @@ function MenuPage() {
   const [pizzaForm, setPizzaForm] = useState(null);
   const [editingRating, setEditingRating] = useState(null);
   const [ratingForm, setRatingForm] = useState(null);
+  const [editingOffer, setEditingOffer] = useState(false);
+  const [offerForm, setOfferForm] = useState(() => createOfferForm(offer));
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingOffer, setIsSavingOffer] = useState(false);
 
   const canEditMenu = isAdminCustomer(customer);
+  const offerActive = isLunchOfferActive(new Date(), offer);
 
   async function loadMenuData() {
     const [nextSections, nextMenuData] = await Promise.all([
@@ -133,6 +164,10 @@ function MenuPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setOfferForm(createOfferForm(offer));
+  }, [offer]);
+
   const allMenuItems = sections.flatMap(section => section.items);
   const visibleMenuItems = allMenuItems.filter(item => {
     if (menuFilter === 'veg') {
@@ -183,6 +218,15 @@ function MenuPage() {
   function closeRatingEditor() {
     setEditingRating(null);
     setRatingForm(null);
+  }
+
+  function openOfferEditor() {
+    setOfferForm(createOfferForm(offer));
+    setEditingOffer(true);
+  }
+
+  function closeOfferEditor() {
+    setEditingOffer(false);
   }
 
   async function handleSavePizza() {
@@ -237,6 +281,30 @@ function MenuPage() {
     }
   }
 
+  async function handleSaveOffer() {
+    try {
+      const payload = toOfferPayload(offerForm);
+
+      if (!payload.label || !payload.title) {
+        throw new Error('Tarjouksella tulee olla nimi ja otsikko.');
+      }
+
+      if (!Number.isFinite(payload.discountPercent) || payload.discountPercent < 0 || payload.discountPercent > 100) {
+        throw new Error('Alennusprosentin tulee olla välillä 0-100.');
+      }
+
+      setIsSavingOffer(true);
+      const updatedOffer = await saveOffer(payload);
+      setOfferForm(createOfferForm(updatedOffer));
+      setActionMessage('Tarjous tallennettu tietokantaan.');
+      closeOfferEditor();
+    } catch (error) {
+      setActionMessage(error.message || 'Tarjouksen tallennus epäonnistui.');
+    } finally {
+      setIsSavingOffer(false);
+    }
+  }
+
   function handleQuantityChange(pizza, nextQuantity) {
     updateQuantity(pizza.id, nextQuantity);
   }
@@ -281,6 +349,23 @@ function MenuPage() {
             <span>
               {(totalCents / 100).toFixed(2).replace('.', ',')} € yhteensä
             </span>
+          </div>
+          <div className="menu-summary-card__offer">
+            <p className="section__label">{offer.label}</p>
+            <h3>{offer.title}</h3>
+            <p>{offerActive ? offer.activeText : offer.inactiveText}</p>
+            <p>
+              {offer.discountPercent}% alennus {offer.startTime}–{offer.endTime}
+            </p>
+            {canEditMenu ? (
+              <button
+                type="button"
+                className="button button--secondary menu-summary-card__edit-button"
+                onClick={openOfferEditor}
+              >
+                Muokkaa tarjousta
+              </button>
+            ) : null}
           </div>
           {items.length > 0 ? (
             <div className="menu-summary-card__cart-preview">
@@ -537,6 +622,117 @@ function MenuPage() {
                 disabled={isSaving}
               >
                 {isSaving ? 'Tallennetaan...' : 'Tallenna'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingOffer ? (
+        <div className="menu-modal-overlay" onClick={closeOfferEditor}>
+          <div className="menu-modal menu-modal--small" onClick={event => event.stopPropagation()}>
+            <div className="menu-modal__header">
+              <h2>Muokkaa tarjousta</h2>
+              <button type="button" className="menu-modal__close" onClick={closeOfferEditor}>
+                x
+              </button>
+            </div>
+            <div className="menu-modal__body">
+              <label>
+                Nimi
+                <input
+                  type="text"
+                  value={offerForm.label}
+                  onChange={event =>
+                    setOfferForm(current => ({...current, label: event.target.value}))
+                  }
+                />
+              </label>
+              <label>
+                Otsikko
+                <input
+                  type="text"
+                  value={offerForm.title}
+                  onChange={event =>
+                    setOfferForm(current => ({...current, title: event.target.value}))
+                  }
+                />
+              </label>
+              <div className="menu-modal__grid">
+                <label>
+                  Alennusprosentti
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={offerForm.discountPercent}
+                    onChange={event =>
+                      setOfferForm(current => ({
+                        ...current,
+                        discountPercent: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  Alkaa
+                  <input
+                    type="time"
+                    value={offerForm.startTime}
+                    onChange={event =>
+                      setOfferForm(current => ({...current, startTime: event.target.value}))
+                    }
+                  />
+                </label>
+                <label>
+                  Päättyy
+                  <input
+                    type="time"
+                    value={offerForm.endTime}
+                    onChange={event =>
+                      setOfferForm(current => ({...current, endTime: event.target.value}))
+                    }
+                  />
+                </label>
+              </div>
+              <label>
+                Voimassaolon aikana näytettävä teksti
+                <textarea
+                  rows="3"
+                  value={offerForm.activeText}
+                  onChange={event =>
+                    setOfferForm(current => ({...current, activeText: event.target.value}))
+                  }
+                />
+              </label>
+              <label>
+                Muulloin näytettävä teksti
+                <textarea
+                  rows="3"
+                  value={offerForm.inactiveText}
+                  onChange={event =>
+                    setOfferForm(current => ({...current, inactiveText: event.target.value}))
+                  }
+                />
+              </label>
+            </div>
+            <div className="menu-modal__actions">
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={closeOfferEditor}
+                disabled={isSavingOffer}
+              >
+                Peruuta
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={handleSaveOffer}
+                disabled={isSavingOffer}
+              >
+                {isSavingOffer ? 'Tallennetaan...' : 'Tallenna'}
               </button>
             </div>
           </div>

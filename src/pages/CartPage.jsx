@@ -4,6 +4,7 @@ import Navigation from '../components/Navigation';
 import OrderSuccessModal from '../components/OrderSuccessModal';
 import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {useOffer} from '../contexts/OfferContext';
 import {submitOrder} from '../api/orderApi';
 import '../css/cart_style.css';
 import {isLunchOfferActive, applyLunchDiscount, formatEuro} from '../utils/offer';
@@ -17,6 +18,7 @@ function formatEuros(priceCents) {
 
 function CartPage() {
   const {customer} = useCustomerSession();
+  const {offer} = useOffer();
   const {
     items,
     itemCount,
@@ -41,10 +43,10 @@ function CartPage() {
 
     return 0;
   });
-  const offerActive = isLunchOfferActive();
+  const offerActive = isLunchOfferActive(new Date(), offer);
   const normalTotalCents = activeItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * it.quantity, 0);
   const discountedTotalCents = activeItems.reduce(
-    (sum, it) => sum + applyLunchDiscount(Number(it.priceCents) || 0) * it.quantity,
+    (sum, it) => sum + applyLunchDiscount(Number(it.priceCents) || 0, new Date(), offer) * it.quantity,
     0
   );
 
@@ -68,7 +70,7 @@ function CartPage() {
 
       const order = await submitOrder({
         customerId: customer?.id || null,
-        totalCents,
+        totalCents: offerActive ? discountedTotalCents : totalCents,
         items: orderItems,
       });
 
@@ -179,7 +181,9 @@ function CartPage() {
                         +
                       </button>
                       <strong>
-                        {formatEuros(item.priceCents * item.quantity)}
+                        {offerActive
+                          ? formatEuros(applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer) * item.quantity)
+                          : formatEuros(item.priceCents * item.quantity)}
                       </strong>
                     </div>
                   </div>

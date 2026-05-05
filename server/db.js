@@ -33,6 +33,26 @@ const MENU_IMAGE_BY_ID = {
   11: '/src/assets/images/pizza-hawaii.jpg',
 };
 
+const DEFAULT_OPENING_HOURS = {
+  label: 'Aukioloajat',
+  title: 'Pizzeria on auki',
+  weekdaysLabel: 'Ma - pe',
+  weekdaysHours: '6.00 - 18.00',
+  weekendsLabel: 'La - su',
+  weekendsHours: '8.00 - 15.00',
+  lunchNote: 'Ennen klo 13 saat lounaspizzat 10 % edullisemmin.',
+};
+
+const DEFAULT_LUNCH_OFFER = {
+  label: 'Lounastarjous',
+  title: '10 % edullisempi ennen klo 13',
+  discountPercent: 10,
+  startTime: '11:00',
+  endTime: '13:00',
+  activeText: 'Ennen klo 13 tilatut pizzat ovat 10 % tavallista halvempia.',
+  inactiveText: '10 % alennus on voimassa klo 11.00-13.00.',
+};
+
 function getDefaultMenuImage(item) {
   const customImage = String(item?.image || '').trim();
 
@@ -229,6 +249,7 @@ export async function initDatabase() {
       is_lunch_item TINYINT(1) NOT NULL DEFAULT 0,
       available_weekday VARCHAR(50) NULL,
       image VARCHAR(500) NULL,
+      featured TINYINT(1) NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -245,6 +266,19 @@ export async function initDatabase() {
 
   if (imageColumnRows.length === 0) {
     await pool.query(`ALTER TABLE menu_items ADD COLUMN image VARCHAR(500) NULL AFTER available_weekday`);
+  }
+
+  const [featuredColumnRows] = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = 'menu_items'
+       AND column_name = 'featured'
+     LIMIT 1`
+  );
+
+  if (featuredColumnRows.length === 0) {
+    await pool.query(`ALTER TABLE menu_items ADD COLUMN featured TINYINT(1) NOT NULL DEFAULT 0 AFTER image`);
   }
 
   await pool.query(
@@ -278,6 +312,11 @@ export async function initDatabase() {
       MENU_IMAGE_BY_ID[10],
       MENU_IMAGE_BY_ID[11],
     ]
+  );
+
+  // Mark first 4 items as featured
+  await pool.query(
+    `UPDATE menu_items SET featured = 1 WHERE menu_item_id IN (1, 2, 3, 4)`
   );
 
   // Create ratings table if it doesn't exist
@@ -323,6 +362,158 @@ export async function initDatabase() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS opening_hours (
+      opening_hours_id INT PRIMARY KEY AUTO_INCREMENT,
+      label VARCHAR(100) NOT NULL,
+      title VARCHAR(150) NOT NULL,
+      weekdays_label VARCHAR(50) NOT NULL,
+      weekdays_hours VARCHAR(50) NOT NULL,
+      weekends_label VARCHAR(50) NOT NULL,
+      weekends_hours VARCHAR(50) NOT NULL,
+      lunch_note VARCHAR(255) NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  const openingHoursColumns = await getTableColumns(pool, 'opening_hours');
+
+  if (!hasColumn(openingHoursColumns, 'label')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN label VARCHAR(100) NOT NULL DEFAULT 'Aukioloajat'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'title')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN title VARCHAR(150) NOT NULL DEFAULT 'Pizzeria on auki'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'weekdays_label')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN weekdays_label VARCHAR(50) NOT NULL DEFAULT 'Ma - pe'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'weekdays_hours')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN weekdays_hours VARCHAR(50) NOT NULL DEFAULT '6.00 - 18.00'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'weekends_label')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN weekends_label VARCHAR(50) NOT NULL DEFAULT 'La - su'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'weekends_hours')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN weekends_hours VARCHAR(50) NOT NULL DEFAULT '8.00 - 15.00'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'lunch_note')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN lunch_note VARCHAR(255) NOT NULL DEFAULT 'Ennen klo 13 saat lounaspizzat 10 % edullisemmin.'`);
+  }
+  if (!hasColumn(openingHoursColumns, 'updated_at')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lunch_offers (
+      lunch_offer_id INT PRIMARY KEY AUTO_INCREMENT,
+      label VARCHAR(100) NOT NULL,
+      title VARCHAR(150) NOT NULL,
+      discount_percent DECIMAL(5,2) NOT NULL,
+      start_time TIME NOT NULL,
+      end_time TIME NOT NULL,
+      active_text VARCHAR(255) NOT NULL,
+      inactive_text VARCHAR(255) NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  const lunchOfferColumns = await getTableColumns(pool, 'lunch_offers');
+  if (!hasColumn(lunchOfferColumns, 'label')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN label VARCHAR(100) NOT NULL DEFAULT 'Lounastarjous'`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'title')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN title VARCHAR(150) NOT NULL DEFAULT '10 % edullisempi ennen klo 13'`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'discount_percent')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN discount_percent DECIMAL(5,2) NOT NULL DEFAULT 10.00`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'start_time')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN start_time TIME NOT NULL DEFAULT '11:00:00'`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'end_time')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN end_time TIME NOT NULL DEFAULT '13:00:00'`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'active_text')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN active_text VARCHAR(255) NOT NULL DEFAULT 'Ennen klo 13 tilatut pizzat ovat 10 % tavallista halvempia.'`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'inactive_text')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN inactive_text VARCHAR(255) NOT NULL DEFAULT '10 % alennus on voimassa klo 11.00-13.00.'`);
+  }
+  if (!hasColumn(lunchOfferColumns, 'updated_at')) {
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+  }
+
+  const [lunchOfferRows] = await pool.query(`SELECT lunch_offer_id FROM lunch_offers LIMIT 1`);
+  if (lunchOfferRows.length === 0) {
+    await pool.query(
+      `INSERT INTO lunch_offers (
+        label,
+        title,
+        discount_percent,
+        start_time,
+        end_time,
+        active_text,
+        inactive_text
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)` ,
+      [
+        DEFAULT_LUNCH_OFFER.label,
+        DEFAULT_LUNCH_OFFER.title,
+        DEFAULT_LUNCH_OFFER.discountPercent,
+        '11:00:00',
+        '13:00:00',
+        DEFAULT_LUNCH_OFFER.activeText,
+        DEFAULT_LUNCH_OFFER.inactiveText,
+      ]
+    );
+  }
+
+  const [openingHoursRows] = await pool.query(
+    `SELECT label FROM opening_hours LIMIT 1`
+  );
+
+  if (openingHoursRows.length === 0) {
+    await pool.query(
+      `INSERT INTO opening_hours (
+        label,
+        title,
+        weekdays_label,
+        weekdays_hours,
+        weekends_label,
+        weekends_hours,
+        lunch_note
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        DEFAULT_OPENING_HOURS.label,
+        DEFAULT_OPENING_HOURS.title,
+        DEFAULT_OPENING_HOURS.weekdaysLabel,
+        DEFAULT_OPENING_HOURS.weekdaysHours,
+        DEFAULT_OPENING_HOURS.weekendsLabel,
+        DEFAULT_OPENING_HOURS.weekendsHours,
+        DEFAULT_OPENING_HOURS.lunchNote,
+      ]
+    );
+  } else {
+    await pool.query(
+      `UPDATE opening_hours
+       SET label = ?,
+           title = ?,
+           weekdays_label = ?,
+           weekdays_hours = ?,
+           weekends_label = ?,
+           weekends_hours = ?,
+           lunch_note = ?`,
+      [
+        DEFAULT_OPENING_HOURS.label,
+        DEFAULT_OPENING_HOURS.title,
+        DEFAULT_OPENING_HOURS.weekdaysLabel,
+        DEFAULT_OPENING_HOURS.weekdaysHours,
+        DEFAULT_OPENING_HOURS.weekendsLabel,
+        DEFAULT_OPENING_HOURS.weekendsHours,
+        DEFAULT_OPENING_HOURS.lunchNote,
+      ]
+    );
+  }
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       order_id INT PRIMARY KEY AUTO_INCREMENT,
       customer_user_id INT NULL DEFAULT NULL,
@@ -330,6 +521,9 @@ export async function initDatabase() {
       order_type VARCHAR(50) NULL DEFAULT NULL,
       status VARCHAR(50) DEFAULT 'pending',
       pickup_time VARCHAR(50) NULL DEFAULT NULL,
+      subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+      discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+      discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
       total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -345,6 +539,15 @@ export async function initDatabase() {
       ADD COLUMN location_id INT NULL DEFAULT NULL AFTER customer_user_id
     `);
   }
+  if (!hasColumn(ordersTableColumns, 'subtotal_amount')) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER pickup_time`);
+  }
+  if (!hasColumn(ordersTableColumns, 'discount_percent')) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0 AFTER subtotal_amount`);
+  }
+  if (!hasColumn(ordersTableColumns, 'discount_amount')) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_percent`);
+  }
 
   // Create order_items table
   await pool.query(`
@@ -353,12 +556,34 @@ export async function initDatabase() {
       order_id INT NOT NULL,
       menu_item_id INT NOT NULL,
       quantity INT NOT NULL DEFAULT 1,
+      original_unit_price DECIMAL(10,2) NOT NULL,
+      discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+      discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+      discounted_unit_price DECIMAL(10,2) NOT NULL,
+      line_total DECIMAL(10,2) NOT NULL,
       unit_price DECIMAL(10,2) NOT NULL,
       notes VARCHAR(255) NULL,
       FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
       FOREIGN KEY (menu_item_id) REFERENCES menu_items(menu_item_id) ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  const orderItemsColumns = await getTableColumns(pool, 'order_items');
+  if (!hasColumn(orderItemsColumns, 'original_unit_price')) {
+    await pool.query(`ALTER TABLE order_items ADD COLUMN original_unit_price DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER quantity`);
+  }
+  if (!hasColumn(orderItemsColumns, 'discount_percent')) {
+    await pool.query(`ALTER TABLE order_items ADD COLUMN discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0 AFTER original_unit_price`);
+  }
+  if (!hasColumn(orderItemsColumns, 'discount_amount')) {
+    await pool.query(`ALTER TABLE order_items ADD COLUMN discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_percent`);
+  }
+  if (!hasColumn(orderItemsColumns, 'discounted_unit_price')) {
+    await pool.query(`ALTER TABLE order_items ADD COLUMN discounted_unit_price DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_amount`);
+  }
+  if (!hasColumn(orderItemsColumns, 'line_total')) {
+    await pool.query(`ALTER TABLE order_items ADD COLUMN line_total DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discounted_unit_price`);
+  }
 }
 
 export async function pingDatabase() {
@@ -367,8 +592,18 @@ export async function pingDatabase() {
 
 export async function getAllMenuItems() {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
      FROM menu_items
+     ORDER BY menu_item_id ASC`
+  );
+  return rows.map(mapRowToItem);
+}
+
+export async function getFeaturedMenuItems() {
+  const [rows] = await pool.query(
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
+     FROM menu_items
+     WHERE featured = 1
      ORDER BY menu_item_id ASC`
   );
   return rows.map(mapRowToItem);
@@ -376,7 +611,7 @@ export async function getAllMenuItems() {
 
 export async function getMenuItemById(itemId) {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image
+    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
      FROM menu_items
      WHERE menu_item_id = ?
      LIMIT 1`,
@@ -395,6 +630,7 @@ export async function upsertMenuItem(item) {
   const dietaryInfo = formatDietaryInfo(item.diet);
   const isLunchItem = item.mealType === 'lunch' ? 1 : 0;
   const imageValue = getDefaultMenuImage(item);
+  const featured = item.featured ? 1 : 0;
 
   if (item.itemId != null && String(item.itemId).trim() !== '') {
     const [existingRows] = await pool.query(
@@ -405,7 +641,7 @@ export async function upsertMenuItem(item) {
     if (existingRows.length > 0) {
       await pool.query(
         `UPDATE menu_items
-         SET name = ?, description = ?, price = ?, category = ?, dietary_info = ?, is_lunch_item = ?, available_weekday = ?, image = ?
+         SET name = ?, description = ?, price = ?, category = ?, dietary_info = ?, is_lunch_item = ?, available_weekday = ?, image = ?, featured = ?
          WHERE menu_item_id = ?`,
         [
           item.name,
@@ -416,6 +652,7 @@ export async function upsertMenuItem(item) {
           isLunchItem,
           item.availableWeekday ?? null,
           imageValue,
+          featured,
           item.itemId,
         ]
       );
@@ -432,8 +669,9 @@ export async function upsertMenuItem(item) {
       dietary_info,
       is_lunch_item,
       available_weekday,
-      image
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      image,
+      featured
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.name,
       item.description ?? null,
@@ -443,6 +681,7 @@ export async function upsertMenuItem(item) {
       isLunchItem,
       item.availableWeekday ?? null,
       imageValue,
+      featured,
     ]
   );
 }
@@ -882,6 +1121,103 @@ export async function getRatings() {
   }));
 }
 
+export async function getOpeningHours() {
+  const [rows] = await pool.query(
+    `SELECT
+      label,
+      title,
+      weekdays_label,
+      weekdays_hours,
+      weekends_label,
+      weekends_hours,
+      lunch_note
+     FROM opening_hours
+     LIMIT 1`
+  );
+
+  const row = rows[0];
+
+  if (!row) {
+    return {...DEFAULT_OPENING_HOURS};
+  }
+
+  return {
+    label: row.label,
+    title: row.title,
+    weekdaysLabel: row.weekdays_label,
+    weekdaysHours: row.weekdays_hours,
+    weekendsLabel: row.weekends_label,
+    weekendsHours: row.weekends_hours,
+    lunchNote: row.lunch_note,
+  };
+}
+
+function normalizeLunchOfferRow(row) {
+  if (!row) {
+    return {...DEFAULT_LUNCH_OFFER};
+  }
+
+  return {
+    label: row.label,
+    title: row.title,
+    discountPercent: Number(row.discount_percent),
+    startTime: String(row.start_time || DEFAULT_LUNCH_OFFER.startTime).slice(0, 5),
+    endTime: String(row.end_time || DEFAULT_LUNCH_OFFER.endTime).slice(0, 5),
+    activeText: row.active_text,
+    inactiveText: row.inactive_text,
+  };
+}
+
+export async function getLunchOffer() {
+  const [rows] = await pool.query(
+    `SELECT
+      label,
+      title,
+      discount_percent,
+      start_time,
+      end_time,
+      active_text,
+      inactive_text
+     FROM lunch_offers
+     LIMIT 1`
+  );
+
+  return normalizeLunchOfferRow(rows[0]);
+}
+
+export async function updateLunchOffer({label, title, discountPercent, startTime, endTime, activeText, inactiveText}) {
+  const [rows] = await pool.query(`SELECT lunch_offer_id FROM lunch_offers LIMIT 1`);
+  if (rows.length === 0) {
+    throw new Error('Lunch offer row not found');
+  }
+
+  const offerId = rows[0].lunch_offer_id;
+
+  const [result] = await pool.query(
+    `UPDATE lunch_offers
+     SET label = ?,
+         title = ?,
+         discount_percent = ?,
+         start_time = ?,
+         end_time = ?,
+         active_text = ?,
+         inactive_text = ?
+     WHERE lunch_offer_id = ?`,
+    [
+      String(label).trim(),
+      String(title).trim(),
+      Number(discountPercent),
+      String(startTime).trim(),
+      String(endTime).trim(),
+      String(activeText).trim(),
+      String(inactiveText).trim(),
+      offerId,
+    ]
+  );
+
+  return result.affectedRows > 0;
+}
+
 export async function updateRating(ratingId, {score, description}) {
   if (!ratingId) {
     throw new Error('ratingId is required');
@@ -916,7 +1252,7 @@ export async function updateRating(ratingId, {score, description}) {
   return result.affectedRows > 0;
 }
 
-export async function createOrder({customerUserId, locationId = null, totalAmount}) {
+export async function createOrder({customerUserId, locationId = null, subtotalAmount = 0, discountPercent = 0, discountAmount = 0, totalAmount}) {
   let resolvedLocationId = Number.isInteger(locationId) && locationId > 0 ? locationId : null;
 
   if (resolvedLocationId != null) {
@@ -958,22 +1294,69 @@ export async function createOrder({customerUserId, locationId = null, totalAmoun
   }
 
   const [result] = await pool.query(
-    `INSERT INTO orders (customer_user_id, location_id, total_amount, status) VALUES (?, ?, ?, 'pending')`,
-    [customerUserId || null, resolvedLocationId, totalAmount || 0]
+    `INSERT INTO orders (
+      customer_user_id,
+      location_id,
+      subtotal_amount,
+      discount_percent,
+      discount_amount,
+      total_amount,
+      status
+    ) VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+    [
+      customerUserId || null,
+      resolvedLocationId,
+      subtotalAmount || 0,
+      discountPercent || 0,
+      discountAmount || 0,
+      totalAmount || 0,
+    ]
   );
   return result.insertId;
 }
 
-export async function addOrderItem({orderId, menuItemId, quantity, unitPrice, notes}) {
+export async function addOrderItem({
+  orderId,
+  menuItemId,
+  quantity,
+  originalUnitPrice,
+  discountPercent = 0,
+  discountAmount = 0,
+  discountedUnitPrice,
+  lineTotal,
+  notes,
+}) {
   await pool.query(
-    `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, notes) VALUES (?, ?, ?, ?, ?)`,
-    [orderId, menuItemId, quantity, unitPrice, notes || null]
+    `INSERT INTO order_items (
+      order_id,
+      menu_item_id,
+      quantity,
+      original_unit_price,
+      discount_percent,
+      discount_amount,
+      discounted_unit_price,
+      line_total,
+      unit_price,
+      notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      orderId,
+      menuItemId,
+      quantity,
+      originalUnitPrice,
+      discountPercent,
+      discountAmount,
+      discountedUnitPrice,
+      lineTotal,
+      discountedUnitPrice,
+      notes || null,
+    ]
   );
 }
 
 export async function getOrder(orderId) {
   const [orderRows] = await pool.query(
-    `SELECT order_id, customer_user_id, location_id, total_amount, status, created_at FROM orders WHERE order_id = ? LIMIT 1`,
+    `SELECT order_id, customer_user_id, location_id, subtotal_amount, discount_percent, discount_amount, total_amount, status, created_at FROM orders WHERE order_id = ? LIMIT 1`,
     [orderId]
   );
 
@@ -983,7 +1366,7 @@ export async function getOrder(orderId) {
 
   const order = orderRows[0];
   const [itemRows] = await pool.query(
-    `SELECT order_item_id, menu_item_id, quantity, unit_price, notes FROM order_items WHERE order_id = ? ORDER BY order_item_id ASC`,
+    `SELECT order_item_id, menu_item_id, quantity, original_unit_price, discount_percent, discount_amount, discounted_unit_price, line_total, unit_price, notes FROM order_items WHERE order_id = ? ORDER BY order_item_id ASC`,
     [orderId]
   );
 
@@ -991,6 +1374,9 @@ export async function getOrder(orderId) {
     id: order.order_id,
     customerId: order.customer_user_id,
     locationId: order.location_id,
+    subtotalAmount: Number(order.subtotal_amount),
+    discountPercent: Number(order.discount_percent),
+    discountAmount: Number(order.discount_amount),
     totalAmount: Number(order.total_amount),
     status: order.status,
     createdAt: order.created_at,
@@ -998,6 +1384,11 @@ export async function getOrder(orderId) {
       id: item.order_item_id,
       menuItemId: item.menu_item_id,
       quantity: item.quantity,
+      originalUnitPrice: Number(item.original_unit_price),
+      discountPercent: Number(item.discount_percent),
+      discountAmount: Number(item.discount_amount),
+      discountedUnitPrice: Number(item.discounted_unit_price),
+      lineTotal: Number(item.line_total),
       unitPrice: Number(item.unit_price),
       notes: item.notes,
     })),

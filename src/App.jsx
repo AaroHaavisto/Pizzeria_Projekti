@@ -11,6 +11,7 @@ import AccountPage from './pages/AccountPage';
 import LocationPage from './pages/LocationPage';
 import OfferBanner from './components/OfferBanner';
 import {CustomerSessionProvider} from './contexts/CustomerSessionContext';
+import {OfferProvider} from './contexts/OfferContext';
 import {MenuDataProvider} from './contexts/MenuDataContext';
 import {CartProvider} from './contexts/CartContext';
 import CartPage from './pages/CartPage';
@@ -51,22 +52,24 @@ function RouteUiEffects() {
 function App() {
   return (
     <CustomerSessionProvider>
-      <MenuDataProvider>
-        <CartProvider>
-          <Router>
-            <RouteUiEffects />
-            <OfferBanner />
-            <Routes>
-              <Route path="/" element={<MainPage />} />
-              <Route path="/menu" element={<MenuPage />} />
-              <Route path="/location" element={<LocationPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/account" element={<AccountPage />} />
-            </Routes>
-          </Router>
-        </CartProvider>
-      </MenuDataProvider>
+      <OfferProvider>
+        <MenuDataProvider>
+          <CartProvider>
+            <Router>
+              <RouteUiEffects />
+              <OfferBanner />
+              <Routes>
+                <Route path="/" element={<MainPage />} />
+                <Route path="/menu" element={<MenuPage />} />
+                <Route path="/location" element={<LocationPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/account" element={<AccountPage />} />
+              </Routes>
+            </Router>
+          </CartProvider>
+        </MenuDataProvider>
+      </OfferProvider>
     </CustomerSessionProvider>
   );
 }

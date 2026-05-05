@@ -45,6 +45,7 @@ function createEditableItem(item) {
     ...item,
     dietText: Array.isArray(item.diet) ? item.diet.join(', ') : '',
     image: item.image || IMAGE_OPTIONS[0].value,
+    featured: Boolean(item.featured),
   };
 }
 
@@ -65,6 +66,7 @@ function toSavedItem(item) {
     diet,
     mealType: item.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
     image: String(item.image || '').trim(),
+    featured: Boolean(item.featured),
   };
 }
 
@@ -299,6 +301,17 @@ function AdminPage() {
                       }
                       placeholder="/src/assets/images/..."
                     />
+                  </label>
+                  <label className="menu-editor__field" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <input
+                      type="checkbox"
+                      checked={item.featured}
+                      onChange={event =>
+                        updateMenuItem(item.itemId, 'featured', event.target.checked)
+                      }
+                      style={{width: '20px', height: '20px', margin: 0, marginTop: '20px'}}
+                    />
+                    <span>Näytä etusivulla</span>
                   </label>
                 </div>
 

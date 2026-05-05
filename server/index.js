@@ -6,7 +6,10 @@ import {
   createOrder,
   deleteMenuItem,
   getAllMenuItems,
+  getFeaturedMenuItems,
   getMenuItemById,
+  getOpeningHours,
+  getLunchOffer,
   getOrder,
   getRatings,
   initDatabase,
@@ -15,6 +18,7 @@ import {
   pingDatabase,
   registerCustomerAccount,
   updateRating,
+  updateLunchOffer,
   upsertMenuItem,
 } from './db.js';
 
@@ -105,6 +109,71 @@ function validateCustomerAuthPayload(payload, mode) {
   }
 
   return errors;
+}
+
+function validateLunchOfferPayload(payload) {
+  const errors = [];
+
+  if (!payload || typeof payload !== 'object') {
+    return ['Body must be an object'];
+  }
+
+  if (!payload.label || typeof payload.label !== 'string' || !payload.label.trim()) {
+    errors.push('label is required and must be string');
+  }
+
+  if (!payload.title || typeof payload.title !== 'string' || !payload.title.trim()) {
+    errors.push('title is required and must be string');
+  }
+
+  const discountPercent = Number(payload.discountPercent);
+  if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+    errors.push('discountPercent must be a number between 0 and 100');
+  }
+
+  if (!payload.startTime || typeof payload.startTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(payload.startTime.trim())) {
+    errors.push('startTime must be in HH:MM format');
+  }
+
+  if (!payload.endTime || typeof payload.endTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(payload.endTime.trim())) {
+    errors.push('endTime must be in HH:MM format');
+  }
+
+  if (!payload.activeText || typeof payload.activeText !== 'string' || !payload.activeText.trim()) {
+    errors.push('activeText is required and must be string');
+  }
+
+  if (!payload.inactiveText || typeof payload.inactiveText !== 'string' || !payload.inactiveText.trim()) {
+    errors.push('inactiveText is required and must be string');
+  }
+
+  return errors;
+}
+
+function parseClockMinutes(timeValue) {
+  if (typeof timeValue !== 'string') {
+    return null;
+  }
+
+  const match = timeValue.trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function calculateOfferDiscountPercent(offer, now = new Date()) {
+  const startMinutes = parseClockMinutes(offer?.startTime);
+  const endMinutes = parseClockMinutes(offer?.endTime);
+  const discountPercent = Number(offer?.discountPercent) || 0;
+
+  if (startMinutes == null || endMinutes == null || discountPercent <= 0) {
+    return 0;
+  }
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  return currentMinutes >= startMinutes && currentMinutes < endMinutes ? discountPercent : 0;
 }
 
 function validateItem(item, pathPrefix) {
@@ -199,6 +268,24 @@ app.get('/api/ratings', async (_req, res) => {
   }
 });
 
+app.get('/api/opening-hours', async (_req, res) => {
+  try {
+    const openingHours = await getOpeningHours();
+    res.json({openingHours});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.get('/api/lunch-offer', async (_req, res) => {
+  try {
+    const lunchOffer = await getLunchOffer();
+    res.json({lunchOffer});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
 app.put('/api/ratings/:ratingId', requireAdmin, async (req, res) => {
   try {
     const {score, description} = req.body;
@@ -220,6 +307,39 @@ app.put('/api/ratings/:ratingId', requireAdmin, async (req, res) => {
 
     const updatedRatings = await getRatings();
     res.json({message: 'Rating updated', ratings: updatedRatings});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.put('/api/lunch-offer', requireAdmin, async (req, res) => {
+  try {
+    const errors = validateLunchOfferPayload(req.body);
+    if (errors.length > 0) {
+      throw createHttpError(
+        400,
+        'VALIDATION_ERROR',
+        'Invalid request body',
+        errors
+      );
+    }
+
+    const wasUpdated = await updateLunchOffer({
+      label: req.body.label,
+      title: req.body.title,
+      discountPercent: Number(req.body.discountPercent),
+      startTime: req.body.startTime,
+      endTime: req.body.endTime,
+      activeText: req.body.activeText,
+      inactiveText: req.body.inactiveText,
+    });
+
+    if (!wasUpdated) {
+      throw createHttpError(404, 'LUNCH_OFFER_NOT_FOUND', 'Lunch offer not found');
+    }
+
+    const lunchOffer = await getLunchOffer();
+    res.json({message: 'Lunch offer updated', lunchOffer});
   } catch (err) {
     sendError(res, err);
   }
@@ -286,6 +406,15 @@ app.post('/api/customers/login', async (req, res) => {
 app.get('/api/menu', async (_req, res) => {
   try {
     const items = await getAllMenuItems();
+    res.json({items});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+app.get('/api/menu/featured', async (_req, res) => {
+  try {
+    const items = await getFeaturedMenuItems();
     res.json({items});
   } catch (err) {
     sendError(res, err);
@@ -424,7 +553,7 @@ app.use((err, _req, res, next) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
-    const {customerId, locationId, totalCents, items} = req.body;
+    const {customerId, locationId, items} = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
       throw createHttpError(
@@ -452,22 +581,59 @@ app.post('/api/orders', async (req, res) => {
       }
     }
 
-    const totalAmount = Number(totalCents) / 100;
+    const lunchOffer = await getLunchOffer();
+    const discountPercent = calculateOfferDiscountPercent(lunchOffer);
+
+    const pricedItems = items.map(item => {
+      const originalUnitPrice = Number(item.unitPrice) / 100;
+      const discountAmount = discountPercent > 0
+        ? Number((originalUnitPrice * (discountPercent / 100)).toFixed(2))
+        : 0;
+      const discountedUnitPrice = Number((originalUnitPrice - discountAmount).toFixed(2));
+      const lineTotal = Number((discountedUnitPrice * item.quantity).toFixed(2));
+
+      return {
+        ...item,
+        originalUnitPrice,
+        discountPercent,
+        discountAmount,
+        discountedUnitPrice,
+        lineTotal,
+      };
+    });
+
+    const subtotalAmount = pricedItems.reduce(
+      (sum, item) => sum + item.originalUnitPrice * item.quantity,
+      0
+    );
+    const discountAmount = pricedItems.reduce(
+      (sum, item) => sum + (item.originalUnitPrice - item.discountedUnitPrice) * item.quantity,
+      0
+    );
+    const totalAmount = pricedItems.reduce((sum, item) => sum + item.lineTotal, 0);
 
     // Create order
     const orderId = await createOrder({
       customerUserId: customerId || null,
       locationId: Number.isInteger(locationId) && locationId > 0 ? locationId : null,
+      subtotalAmount,
+      discountPercent,
+      discountAmount,
       totalAmount,
     });
 
     // Add order items
-    for (const item of items) {
+    for (const item of pricedItems) {
       await addOrderItem({
         orderId,
         menuItemId: item.menuItemId,
         quantity: item.quantity,
-        unitPrice: item.unitPrice / 100,
+        originalUnitPrice: item.originalUnitPrice,
+        discountPercent: item.discountPercent,
+        discountAmount: item.discountAmount,
+        discountedUnitPrice: item.discountedUnitPrice,
+        lineTotal: item.lineTotal,
+        unitPrice: item.discountedUnitPrice,
         notes: item.notes,
       });
     }

@@ -167,3 +167,16 @@ export async function getFeaturedMenuCards(featuredNames = []) {
     .map(name => normalized.get(String(name).trim().toLowerCase()))
     .filter(Boolean);
 }
+
+export async function getFeaturedMenuItems() {
+  try {
+    const url = `${MENU_API_ENDPOINT}/featured`;
+    const payload = await requestJson(url);
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    return items.map(item => toCardItem(item));
+  } catch {
+    // Return first 4 items from all items as fallback
+    const allCards = await getWeeklyMenuCards();
+    return allCards.slice(0, 4);
+  }
+}

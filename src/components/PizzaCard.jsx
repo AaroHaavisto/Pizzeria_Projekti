@@ -1,4 +1,5 @@
 import '../css/menu_style.css';
+import {useOffer} from '../contexts/OfferContext';
 import {isLunchOfferActive, applyLunchDiscount, formatEuro} from '../utils/offer';
 
 function PizzaCard({
@@ -10,10 +11,11 @@ function PizzaCard({
   onQuantityChange,
   anchorId,
 }) {
+  const {offer} = useOffer();
   const isInCart = cartQuantity > 0;
   const priceCents = Number.isFinite(Number(pizza.priceCents)) ? Number(pizza.priceCents) : Math.round((parseFloat(String(pizza.price || '0').replace(',', '.')) || 0) * 100);
-  const offerActive = isLunchOfferActive();
-  const discountedCents = applyLunchDiscount(priceCents);
+  const offerActive = isLunchOfferActive(new Date(), offer);
+  const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
 
   return (
     <article className="pizza-card" id={anchorId}>
@@ -38,9 +40,11 @@ function PizzaCard({
         <p>{pizza.description}</p>
         <div className="pizza-card__meta">
           <div className="pizza-card__price-wrap">
-            <span className="pizza-card__price-normal">{formatEuro(priceCents)}</span>
             {offerActive ? (
-              <span className="pizza-card__price-discount">{formatEuro(discountedCents)}</span>
+              <>
+                <span className="pizza-card__price-old">{formatEuro(priceCents)}</span>
+                <span className="pizza-card__price-discount">{formatEuro(discountedCents)}</span>
+              </>
             ) : (
               <span className="pizza-card__price-current">{formatEuro(priceCents)}</span>
             )}

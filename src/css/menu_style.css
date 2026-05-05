@@ -53,7 +53,7 @@
   cursor: pointer;
 }
 .pizza-card__price-wrap { display: flex; gap: 8px; align-items: baseline; }
-.pizza-card__price-normal { font-size: 0.86rem; color: #7a6b62; font-weight: 700; text-decoration: line-through; }
+.pizza-card__price-old { font-size: 0.86rem; color: #7a6b62; font-weight: 700; text-decoration: line-through; }
 .pizza-card__price-discount { font-size: 1.08rem; font-weight: 900; color: #b80f0f; }
 .pizza-card__price-current { font-size: 1.08rem; font-weight: 900; color: #b85a25; }
 

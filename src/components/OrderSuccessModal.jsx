@@ -45,6 +45,14 @@ function OrderSuccessModal({order, onClose}) {
               <p>
                 <strong>Kokonaissumma:</strong> {formattedTotal}
               </p>
+              {Number(order.discountAmount || 0) > 0 ? (
+                <p>
+                  <strong>Alennus:</strong> -{new Intl.NumberFormat('fi-FI', {
+                    style: 'currency',
+                    currency: 'EUR',
+                  }).format(order.discountAmount)}
+                </p>
+              ) : null}
               <p>
                 <strong>Tuotteita:</strong> {order.items?.length || 0} kpl
               </p>
@@ -63,7 +71,16 @@ function OrderSuccessModal({order, onClose}) {
                       {new Intl.NumberFormat('fi-FI', {
                         style: 'currency',
                         currency: 'EUR',
-                      }).format(item.unitPrice * item.quantity)}
+                      }).format(item.lineTotal)}
+                      {Number(item.discountPercent || 0) > 0 ? (
+                        <span>
+                          {' '}
+                          (alennus {item.discountPercent}%: -{new Intl.NumberFormat('fi-FI', {
+                            style: 'currency',
+                            currency: 'EUR',
+                          }).format(item.discountAmount * item.quantity)})
+                        </span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

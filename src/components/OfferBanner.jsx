@@ -1,16 +1,18 @@
-import {isLunchOfferActive, getLunchWindow, formatEuro} from '../utils/offer';
+import {useOffer} from '../contexts/OfferContext';
+import {isLunchOfferActive, getLunchWindow} from '../utils/offer';
 import '../css/main_style.css';
 
 function OfferBanner() {
+  const {offer} = useOffer();
   const now = new Date();
-  const active = isLunchOfferActive(now);
-  const {startHour, endHour} = getLunchWindow();
+  const active = isLunchOfferActive(now, offer);
+  const {startTime, endTime} = getLunchWindow(offer);
 
   function timeLabel() {
     if (active) {
-      // compute minutes left until endHour
       const end = new Date(now);
-      end.setHours(endHour, 0, 0, 0);
+      const [endHour, endMinute] = endTime.split(':').map(Number);
+      end.setHours(endHour, endMinute, 0, 0);
       const mins = Math.max(0, Math.round((end - now) / 60000));
       const h = Math.floor(mins / 60);
       const m = mins % 60;
@@ -18,16 +20,17 @@ function OfferBanner() {
       return `Loppuu ${m} min päästä`;
     }
 
-    return `Alkaa klo ${String(startHour).padStart(2, '0')}:00`;
+    return `Alkaa klo ${startTime}`;
   }
 
   return (
     <div className={`offer-banner ${active ? 'offer-banner--active' : ''}`} role="status">
-      <div className="offer-banner__label">Lounastarjous</div>
+      <div className="offer-banner__label">{offer.label}</div>
       <div className="offer-banner__body">
-        <strong className="offer-banner__percent">-10%</strong>
+        <strong className="offer-banner__percent">-{Number(offer.discountPercent) || 0}%</strong>
         <div className="offer-banner__text">
-          <div>Kaikki pizzat {active ? '10 % alennuksella' : '10 % alennus klo 11–13'}</div>
+          <div>{offer.title}</div>
+          <div>{active ? offer.activeText : offer.inactiveText}</div>
           <div className="offer-banner__time">{timeLabel()}</div>
         </div>
       </div>
