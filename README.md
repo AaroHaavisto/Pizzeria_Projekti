@@ -1,5 +1,8 @@
 ﻿# Pizzeria Pro
 
+Linkki (Demo): https://users.metropolia.fi/~aarohaa/Demo/
+Tuleva linkki: https://users.metropolia.fi/~aarohaa/Pizzeria_Pro/
+
 ## Project Idea and Target Audience
 Pizzeria Pro is a restaurant web application for browsing menu items, placing pickup orders, and managing restaurant content.
 
