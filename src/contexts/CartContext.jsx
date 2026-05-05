@@ -4,6 +4,12 @@ const CART_STORAGE_KEY = 'pizzeria_pro_cart';
 
 const CartContext = createContext(null);
 
+/**
+ * Safely parses JSON string with fallback value.
+ * @param {string} value - JSON string to parse
+ * @param {*} fallback - Fallback value if parse fails
+ * @returns {*} Parsed value or fallback
+ */
 function safeParse(value, fallback) {
   try {
     return JSON.parse(value) ?? fallback;
@@ -12,6 +18,10 @@ function safeParse(value, fallback) {
   }
 }
 
+/**
+ * Retrieves initial cart items from localStorage.
+ * @returns {Array} Array of cart items
+ */
 function getInitialCartItems() {
   if (typeof window === 'undefined') {
     return [];
@@ -20,6 +30,11 @@ function getInitialCartItems() {
   return safeParse(window.localStorage.getItem(CART_STORAGE_KEY), []);
 }
 
+/**
+ * Formats menu item for cart storage.
+ * @param {Object} menuItem - Menu item object
+ * @returns {Object} Formatted cart item with quantity
+ */
 function formatCartItem(menuItem) {
   return {
     id: menuItem.id,
@@ -32,6 +47,11 @@ function formatCartItem(menuItem) {
   };
 }
 
+/**
+ * Calculates total quantity and price from cart items.
+ * @param {Array} items - Cart items array
+ * @returns {Object} Object with total quantity and priceCents
+ */
 function sumCartTotals(items) {
   return items.reduce(
     (totals, item) => {

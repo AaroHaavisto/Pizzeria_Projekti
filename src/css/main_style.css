@@ -30,6 +30,30 @@ html {
   }
 }
 
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
@@ -206,6 +230,18 @@ a {
 
 .topbar__button:hover {
   text-decoration: none;
+}
+
+.topbar__lang-trigger {
+  min-width: 50px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+}
+
+.topbar__lang-active {
+  background: rgba(255, 235, 214, 0.9) !important;
+  box-shadow: 0 0 0 2px rgba(243, 154, 87, 0.42) !important;
 }
 
 .hero__content,
@@ -515,6 +551,7 @@ h1 {
     rgba(255, 207, 166, 0.72),
     rgba(255, 249, 240, 0.8)
   );
+  animation: slide-in-left 320ms ease-out;
 }
 
 .rating-summary-card {
@@ -699,6 +736,7 @@ h1 {
     transform 180ms ease,
     box-shadow 180ms ease,
     border-color 180ms ease;
+  animation: scale-in 300ms ease-out;
 }
 
 .pizza-card:hover {

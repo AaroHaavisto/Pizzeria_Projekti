@@ -8,6 +8,11 @@ import {useCart} from '../contexts/CartContext';
 import {useOffer} from '../contexts/OfferContext';
 import {applyLunchDiscount, isLunchOfferActive} from '../utils/offer';
 
+/**
+ * Converts numeric price value to cents.
+ * @param {number|string} value - Price value
+ * @returns {number} Price in cents
+ */
 function toPriceCents(value) {
   if (Number.isFinite(Number(value))) {
     return Math.max(0, Math.round(Number(value)));
@@ -16,6 +21,12 @@ function toPriceCents(value) {
   return 0;
 }
 
+/**
+ * Formats price in cents to currency string.
+ * @param {number} cents - Price in cents
+ * @param {string} currency - Currency code (default: EUR)
+ * @returns {string} Formatted currency string
+ */
 function formatPriceCents(cents, currency = 'EUR') {
   return new Intl.NumberFormat('fi-FI', {
     style: 'currency',
@@ -23,6 +34,12 @@ function formatPriceCents(cents, currency = 'EUR') {
     minimumFractionDigits: 2,
   }).format(Number(cents) / 100);
 }
+
+/**
+ * Main homepage component.
+ * Displays featured items, offers, ratings, opening hours.
+ * @returns {React.ReactElement} Main page JSX
+ */
 function MainPage() {
   const {addToCart} = useCart();
   const {offer} = useOffer();

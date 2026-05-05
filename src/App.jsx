@@ -14,6 +14,7 @@ import {CustomerSessionProvider} from './contexts/CustomerSessionContext';
 import {OfferProvider} from './contexts/OfferContext';
 import {MenuDataProvider} from './contexts/MenuDataContext';
 import {CartProvider} from './contexts/CartContext';
+import {LanguageProvider} from './contexts/LanguageContext';
 import CartPage from './pages/CartPage';
 import AdminPage from './pages/AdminPage';
 
@@ -51,26 +52,28 @@ function RouteUiEffects() {
 
 function App() {
   return (
-    <CustomerSessionProvider>
-      <OfferProvider>
-        <MenuDataProvider>
-          <CartProvider>
-            <Router>
-              <RouteUiEffects />
-              <OfferBanner />
-              <Routes>
-                <Route path="/" element={<MainPage />} />
-                <Route path="/menu" element={<MenuPage />} />
-                <Route path="/location" element={<LocationPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/account" element={<AccountPage />} />
-              </Routes>
-            </Router>
-          </CartProvider>
-        </MenuDataProvider>
-      </OfferProvider>
-    </CustomerSessionProvider>
+    <LanguageProvider>
+      <CustomerSessionProvider>
+        <OfferProvider>
+          <MenuDataProvider>
+            <CartProvider>
+              <Router>
+                <RouteUiEffects />
+                <OfferBanner />
+                <Routes>
+                  <Route path="/" element={<MainPage />} />
+                  <Route path="/menu" element={<MenuPage />} />
+                  <Route path="/location" element={<LocationPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/account" element={<AccountPage />} />
+                </Routes>
+              </Router>
+            </CartProvider>
+          </MenuDataProvider>
+        </OfferProvider>
+      </CustomerSessionProvider>
+    </LanguageProvider>
   );
 }
 

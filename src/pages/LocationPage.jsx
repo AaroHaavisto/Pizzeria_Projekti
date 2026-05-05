@@ -3,8 +3,9 @@ import Navigation from '../components/Navigation';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 
-const RESTAURANT_COORDS = [60.16955, 24.93225];
+const RESTAURANT_COORDS = [60.16880, 24.93265];
 const RESTAURANT_ADDRESS = 'Urho Kekkosen katu 1, 00100 Helsinki';
+const HSL_ROUTE_URL = 'https://reittiopas.hsl.fi/reitti/Urho%20Kekkosen%20katu%201%2C%20Helsinki/';
 
 const restaurantMarker = L.divIcon({
   className: 'location-map__marker',
@@ -53,6 +54,9 @@ function LocationPage() {
           <div className="location-map__actions">
             <a className="button button--primary" href={mapsUrl} target="_blank" rel="noopener noreferrer">
               Kartta
+            </a>
+            <a className="button button--secondary" href={HSL_ROUTE_URL} target="_blank" rel="noopener noreferrer">
+              HSL Reitti
             </a>
           </div>
         </section>

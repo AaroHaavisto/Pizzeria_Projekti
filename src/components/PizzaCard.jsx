@@ -2,6 +2,21 @@ import '../css/menu_style.css';
 import {useOffer} from '../contexts/OfferContext';
 import {isLunchOfferActive, applyLunchDiscount, formatEuro} from '../utils/offer';
 
+/**
+ * Pizza menu card component.
+ * Displays pizza item with image, description, price, and cart controls.
+ * Supports lunch discount application and edit functionality.
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.pizza - Pizza item data
+ * @param {Function} props.onAdd - Callback to add pizza to cart
+ * @param {boolean} props.canEdit - Whether edit button should be shown
+ * @param {Function} props.onEdit - Callback for edit action
+ * @param {number} props.cartQuantity - Current quantity in cart
+ * @param {Function} props.onQuantityChange - Callback for quantity change
+ * @param {string} props.anchorId - HTML id for scroll anchor
+ * @returns {React.ReactElement} Pizza card JSX
+ */
 function PizzaCard({
   pizza,
   onAdd,

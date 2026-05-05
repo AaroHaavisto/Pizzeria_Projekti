@@ -1,10 +1,17 @@
 import {Link} from 'react-router-dom';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useCart} from '../contexts/CartContext';
+import {useLanguage} from '../contexts/LanguageContext';
 
+/**
+ * Main navigation bar component.
+ * Displays branding, links, user menu, and language switcher.
+ * @returns {React.ReactElement} Navigation bar JSX
+ */
 function Navigation() {
   const {customer, logoutCustomer} = useCustomerSession();
   const {itemCount} = useCart();
+  const {language, changeLanguage} = useLanguage();
 
   return (
     <nav className="topbar" aria-label="Päävalikko">
@@ -57,6 +64,27 @@ function Navigation() {
                 </Link>
               </>
             )}
+          </div>
+        </div>
+        <div className="topbar__group">
+          <button className="topbar__trigger topbar__button topbar__lang-trigger" type="button">
+            {language.toUpperCase()}
+          </button>
+          <div className="topbar__dropdown" role="menu" aria-label="Kieli">
+            <button
+              className={`topbar__button topbar__dropdown-button ${language === 'fi' ? 'topbar__lang-active' : ''}`}
+              type="button"
+              onClick={() => changeLanguage('fi')}
+            >
+              Suomi
+            </button>
+            <button
+              className={`topbar__button topbar__dropdown-button ${language === 'en' ? 'topbar__lang-active' : ''}`}
+              type="button"
+              onClick={() => changeLanguage('en')}
+            >
+              English
+            </button>
           </div>
         </div>
       </div>

@@ -3,6 +3,12 @@ import fallbackMenuData from '../data/menu.json';
 
 const MENU_API_ENDPOINT = '/api/menu';
 
+/**
+ * Formats price in cents to currency string.
+ * @param {number} priceCents - Price value in cents
+ * @param {string} currency - Currency code (default: EUR)
+ * @returns {string} Formatted price string
+ */
 function formatPrice(priceCents, currency = 'EUR') {
   return new Intl.NumberFormat('fi-FI', {
     style: 'currency',
@@ -11,6 +17,11 @@ function formatPrice(priceCents, currency = 'EUR') {
   }).format(priceCents / 100);
 }
 
+/**
+ * Transforms raw menu item into card display object.
+ * @param {Object} menuItem - Raw menu item from API
+ * @returns {Object} Formatted card item with display-ready fields
+ */
 function toCardItem(menuItem) {
   const diets =
     Array.isArray(menuItem.diet) && menuItem.diet.length > 0
@@ -33,6 +44,11 @@ function toCardItem(menuItem) {
   };
 }
 
+/**
+ * Extracts menu items array from API response data.
+ * @param {Object} menuData - API response object
+ * @returns {Array} Array of menu items or empty array
+ */
 function extractMenuItems(menuData) {
   if (Array.isArray(menuData?.items)) {
     return menuData.items;
