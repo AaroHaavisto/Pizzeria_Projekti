@@ -40,17 +40,17 @@ const DEFAULT_OPENING_HOURS = {
   weekdaysHours: '6.00 - 18.00',
   weekendsLabel: 'La - su',
   weekendsHours: '8.00 - 15.00',
-  lunchNote: 'Ennen klo 13 saat lounaspizzat 10 % edullisemmin.',
+  lunchNote: 'Ennen klo 13 saat lounaspizzat edullisemmin.',
 };
 
 const DEFAULT_LUNCH_OFFER = {
   label: 'Lounastarjous',
-  title: '10 % edullisempi ennen klo 13',
+  title: 'Edullisempi ennen klo 13',
   discountPercent: 10,
   startTime: '11:00',
   endTime: '13:00',
-  activeText: 'Ennen klo 13 tilatut pizzat ovat 10 % tavallista halvempia.',
-  inactiveText: '10 % alennus on voimassa klo 11.00-13.00.',
+  activeText: 'Ennen klo 13 tilatut pizzat ovat edullisempia.',
+  inactiveText: 'Alennus on voimassa klo 11.00-13.00.',
 };
 
 function getDefaultMenuImage(item) {
@@ -396,7 +396,7 @@ export async function initDatabase() {
     await pool.query(`ALTER TABLE opening_hours ADD COLUMN weekends_hours VARCHAR(50) NOT NULL DEFAULT '8.00 - 15.00'`);
   }
   if (!hasColumn(openingHoursColumns, 'lunch_note')) {
-    await pool.query(`ALTER TABLE opening_hours ADD COLUMN lunch_note VARCHAR(255) NOT NULL DEFAULT 'Ennen klo 13 saat lounaspizzat 10 % edullisemmin.'`);
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN lunch_note VARCHAR(255) NOT NULL DEFAULT 'Ennen klo 13 saat lounaspizzat edullisemmin.'`);
   }
   if (!hasColumn(openingHoursColumns, 'updated_at')) {
     await pool.query(`ALTER TABLE opening_hours ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
@@ -421,7 +421,7 @@ export async function initDatabase() {
     await pool.query(`ALTER TABLE lunch_offers ADD COLUMN label VARCHAR(100) NOT NULL DEFAULT 'Lounastarjous'`);
   }
   if (!hasColumn(lunchOfferColumns, 'title')) {
-    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN title VARCHAR(150) NOT NULL DEFAULT '10 % edullisempi ennen klo 13'`);
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN title VARCHAR(150) NOT NULL DEFAULT 'Edullisempi ennen klo 13'`);
   }
   if (!hasColumn(lunchOfferColumns, 'discount_percent')) {
     await pool.query(`ALTER TABLE lunch_offers ADD COLUMN discount_percent DECIMAL(5,2) NOT NULL DEFAULT 10.00`);
@@ -433,10 +433,10 @@ export async function initDatabase() {
     await pool.query(`ALTER TABLE lunch_offers ADD COLUMN end_time TIME NOT NULL DEFAULT '13:00:00'`);
   }
   if (!hasColumn(lunchOfferColumns, 'active_text')) {
-    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN active_text VARCHAR(255) NOT NULL DEFAULT 'Ennen klo 13 tilatut pizzat ovat 10 % tavallista halvempia.'`);
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN active_text VARCHAR(255) NOT NULL DEFAULT 'Ennen klo 13 tilatut pizzat ovat edullisempia.'`);
   }
   if (!hasColumn(lunchOfferColumns, 'inactive_text')) {
-    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN inactive_text VARCHAR(255) NOT NULL DEFAULT '10 % alennus on voimassa klo 11.00-13.00.'`);
+    await pool.query(`ALTER TABLE lunch_offers ADD COLUMN inactive_text VARCHAR(255) NOT NULL DEFAULT 'Alennus on voimassa klo 11.00-13.00.'`);
   }
   if (!hasColumn(lunchOfferColumns, 'updated_at')) {
     await pool.query(`ALTER TABLE lunch_offers ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);

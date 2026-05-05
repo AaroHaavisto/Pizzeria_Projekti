@@ -236,7 +236,11 @@ function MainPage() {
                 <li>{openingHours.weekdaysLabel} {openingHours.weekdaysHours}</li>
                 <li>{openingHours.weekendsLabel} {openingHours.weekendsHours}</li>
               </ul>
-              <p>{openingHours.lunchNote}</p>
+              <p>
+                <a className="inline-link" href="#tarjoukset">
+                  Lue lounastarjouksesta
+                </a>
+              </p>
             </div>
             <div className="rating-summary-card rating-summary-card--featured">
               <p className="section__label">Asiakastyytyväisyys</p>

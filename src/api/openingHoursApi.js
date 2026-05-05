@@ -7,7 +7,7 @@ const FALLBACK_OPENING_HOURS = {
   weekdaysHours: '6.00 - 18.00',
   weekendsLabel: 'La - su',
   weekendsHours: '8.00 - 15.00',
-  lunchNote: 'Ennen klo 13 saat lounaspizzat 10 % edullisemmin.',
+  lunchNote: 'Ennen klo 13 saat lounaspizzat edullisemmin.',
 };
 
 function normalizeOpeningHours(value) {
