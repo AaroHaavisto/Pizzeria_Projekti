@@ -4,23 +4,7 @@ import {getFeaturedMenuItems} from '../api/menuApi';
 import {fetchOpeningHours} from '../api/openingHoursApi';
 import {fetchRatings} from '../api/ratingsApi';
 import Navigation from '../components/Navigation';
-import {useCart} from '../contexts/CartContext';
-import {useOffer} from '../contexts/OfferContext';
-import {applyLunchDiscount, isLunchOfferActive} from '../utils/offer';
-import {resolveImageUrl} from '../utils/imageUrls';
-
-/**
- * Converts numeric price value to cents.
- * @param {number|string} value - Price value
- * @returns {number} Price in cents
- */
-function toPriceCents(value) {
-  if (Number.isFinite(Number(value))) {
-    return Math.max(0, Math.round(Number(value)));
-  }
-
-  return 0;
-}
+import {useLanguage} from '../contexts/LanguageContext';
 
 /**
  * Formats price in cents to currency string.
@@ -42,60 +26,101 @@ function formatPriceCents(cents, currency = 'EUR') {
  * @returns {React.ReactElement} Main page JSX
  */
 function MainPage() {
-  const {addToCart} = useCart();
-  const {offer} = useOffer();
+  const {language} = useLanguage();
+  const isEnglish = language === 'en';
   const fallbackRatings = [
-    {id: 1, score: '4.8/5', description: 'Asiakastyytyväisyys'},
+    {id: 1, score: '4.8/5', description: isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'},
   ];
   const fallbackOpeningHours = {
-    label: 'Aukioloajat',
-    title: 'Pizzeria on auki',
-    weekdaysLabel: 'Ma - pe',
+    label: isEnglish ? 'Opening hours' : 'Aukioloajat',
+    title: isEnglish ? 'Pizzeria is open' : 'Pizzeria on auki',
+    weekdaysLabel: isEnglish ? 'Mon - Fri' : 'Ma - pe',
     weekdaysHours: '6.00 - 18.00',
-    weekendsLabel: 'La - su',
+    weekendsLabel: isEnglish ? 'Sat - Sun' : 'La - su',
     weekendsHours: '8.00 - 15.00',
-    lunchNote: 'Ennen klo 13 saat lounaspizzat edullisemmin.',
   };
-  const fallbackMenuItems = [
-    {
-      id: 'kana-pizza',
-      name: 'Kana-pizza',
-      description: 'Kana, mozzarella, punasipuli ja talon tomaattikastike.',
-      price: '12,50 €',
-      priceCents: 1250,
-      image: '/src/assets/images/pizza-chicken-bbq.jpg',
-    },
-    {
-      id: 'diavola',
-      name: 'Diavola',
-      description: 'Salami piccante, chili ja mozzarella.',
-      price: '13,20 €',
-      priceCents: 1320,
-      image: '/src/assets/images/pizza-diavola.jpg',
-    },
-    {
-      id: 'tonno',
-      name: 'Tonno',
-      description: 'Tonnikala, kapris ja punasipuli.',
-      price: '12,80 €',
-      priceCents: 1280,
-      image: '/src/assets/images/pizza-tonno.jpg',
-    },
-    {
-      id: 'margherita',
-      name: 'Margherita',
-      description: 'Tomaatti, mozzarella, basilika ja oliiviöljy.',
-      price: '9,90 €',
-      priceCents: 990,
-      image: '/src/assets/images/pizza-margherita.jpg',
-    },
-  ];
+  const fallbackMenuItems = isEnglish
+    ? [
+        {
+          id: 'kana-pizza',
+          name: 'Chicken pizza',
+          description: 'Chicken, mozzarella, red onion, and house tomato sauce.',
+          price: '12,50 €',
+          priceCents: 1250,
+          image: '/src/assets/images/pizza-chicken-bbq.jpg',
+        },
+        {
+          id: 'diavola',
+          name: 'Diavola',
+          description: 'Spicy salami, chili, and mozzarella.',
+          price: '13,20 €',
+          priceCents: 1320,
+          image: '/src/assets/images/pizza-diavola.jpg',
+        },
+        {
+          id: 'tonno',
+          name: 'Tuna pizza',
+          description: 'Tuna, capers, and red onion.',
+          price: '12,80 €',
+          priceCents: 1280,
+          image: '/src/assets/images/pizza-tonno.jpg',
+        },
+        {
+          id: 'margherita',
+          name: 'Margherita',
+          description: 'Tomato, mozzarella, basil, and olive oil.',
+          price: '9,90 €',
+          priceCents: 990,
+          image: '/src/assets/images/pizza-margherita.jpg',
+        },
+      ]
+    : [
+        {
+          id: 'kana-pizza',
+          name: 'Kana-pizza',
+          description: 'Kana, mozzarella, punasipuli ja talon tomaattikastike.',
+          price: '12,50 €',
+          priceCents: 1250,
+          image: '/src/assets/images/pizza-chicken-bbq.jpg',
+        },
+        {
+          id: 'diavola',
+          name: 'Diavola',
+          description: 'Salami piccante, chili ja mozzarella.',
+          price: '13,20 €',
+          priceCents: 1320,
+          image: '/src/assets/images/pizza-diavola.jpg',
+        },
+        {
+          id: 'tonno',
+          name: 'Tonno',
+          description: 'Tonnikala, kapris ja punasipuli.',
+          price: '12,80 €',
+          priceCents: 1280,
+          image: '/src/assets/images/pizza-tonno.jpg',
+        },
+        {
+          id: 'margherita',
+          name: 'Margherita',
+          description: 'Tomaatti, mozzarella, basilika ja oliiviöljy.',
+          price: '9,90 €',
+          priceCents: 990,
+          image: '/src/assets/images/pizza-margherita.jpg',
+        },
+      ];
   const [menuItems, setMenuItems] = useState(fallbackMenuItems);
   const [ratings, setRatings] = useState(fallbackRatings);
   const [openingHours, setOpeningHours] = useState(fallbackOpeningHours);
-  const offerActive = isLunchOfferActive(new Date(), offer);
-  const discountPercent = Number(offer.discountPercent) || 0;
   const ratingSummary = (ratings && ratings.length > 0) ? ratings[0] : fallbackRatings[0];
+  const displayOpeningHours = isEnglish
+    ? {
+        ...openingHours,
+        label: 'Opening hours',
+        title: 'Pizzeria is open',
+        weekdaysLabel: 'Mon - Fri',
+        weekendsLabel: 'Sat - Sun',
+      }
+    : openingHours;
 
   useEffect(() => {
     let mounted = true;
@@ -137,17 +162,6 @@ function MainPage() {
       mounted = false;
     };
   }, []);
-
-  function handleFeaturedClick(item) {
-    addToCart({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      image: resolveImageUrl(item.image || '/src/assets/images/pizza-margherita.jpg'),
-      price: item.price,
-      priceCents: toPriceCents(item.priceCents),
-    });
-  }
 
   useEffect(() => {
     function handleVisibilityChange() {
@@ -222,52 +236,55 @@ function MainPage() {
             role="img"
             aria-label="Tuore pizza puupöydällä"
           >
-            <h1>Pizzaa, joka maistuu oikeasti italialaiselta.</h1>
+            <h1>{isEnglish ? 'Pizza that actually tastes Italian.' : 'Pizzaa, joka maistuu oikeasti italialaiselta.'}</h1>
           </div>
           <p className="hero__text">
-            Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet.
-            Tilaa nouto, kotiinkuljetus tai tule syömään paikan päälle.
+            {isEnglish
+              ? 'Crispy base, rich tomato sauce, and the best ingredients. Order pickup, delivery, or eat in.'
+              : 'Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet. Tilaa nouto, kotiinkuljetus tai tule syömään paikan päälle.'}
           </p>
           <div className="hero__utility-row">
             <div className="hero__control-stack">
               <div className="hero__actions">
                 <Link className="button button--primary" to="/menu">
-                  Katso menu
+                  {isEnglish ? 'View menu' : 'Katso menu'}
                 </Link>
                 <Link className="button button--secondary" to="/location">
-                  Kartta
+                  {isEnglish ? 'Map' : 'Kartta'}
                 </Link>
               </div>
               <div className="hero__subactions">
                 <Link className="chip-link" to="/cart">
-                  Ostoskori
+                  {isEnglish ? 'Cart' : 'Ostoskori'}
                 </Link>
                 <a className="chip-link" href="#menu">
-                  Suosikit
+                  {isEnglish ? 'Favorites' : 'Suosikit'}
                 </a>
               </div>
             </div>
             <div className="opening-hours-card">
-              <p className="section__label">{openingHours.label}</p>
-              <h2>{openingHours.title}</h2>
+              <p className="section__label">{displayOpeningHours.label}</p>
+              <h2>{displayOpeningHours.title}</h2>
               <ul>
-                <li>{openingHours.weekdaysLabel} {openingHours.weekdaysHours}</li>
-                <li>{openingHours.weekendsLabel} {openingHours.weekendsHours}</li>
+                <li>{displayOpeningHours.weekdaysLabel} {displayOpeningHours.weekdaysHours}</li>
+                <li>{displayOpeningHours.weekendsLabel} {displayOpeningHours.weekendsHours}</li>
               </ul>
               <p>
-                <a className="inline-link" href="#tarjoukset">
-                  Lue lounastarjouksesta
-                </a>
+                <Link className="inline-link" to="/menu?focus=all#menu-pizzat">
+                  {isEnglish ? 'Open the menu' : 'Avaa menu'}
+                </Link>
               </p>
             </div>
             <div className="rating-summary-card rating-summary-card--featured">
-              <p className="section__label">Asiakastyytyväisyys</p>
+              <p className="section__label">{isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'}</p>
               <div className="rating-summary-card__score-row">
                 <h3>{ratingSummary.score}</h3>
-                <span>Tämän päivän keskiarvo</span>
+                <span>{isEnglish ? 'Today’s average' : 'Tämän päivän keskiarvo'}</span>
               </div>
               <p className="rating-summary-card__text">
-                Asiakkaat arvostavat nopeaa palvelua ja tuoreita makuja.
+                {isEnglish
+                  ? 'Customers appreciate fast service and fresh flavors.'
+                  : 'Asiakkaat arvostavat nopeaa palvelua ja tuoreita makuja.'}
               </p>
             </div>
           </div>
@@ -276,25 +293,13 @@ function MainPage() {
       </header>
 
       <main>
-        <section className="section section--feature" id="tarjoukset">
-          <div>
-            <p className="section__label">{offer.label}</p>
-            <h2>{offer.title}</h2>
-          </div>
-          <div className="feature-card">
-            <span className="feature-card__badge">-{discountPercent}%</span>
-            <h3>Lounaskello</h3>
-            <p>Voimassa {offer.startTime}–{offer.endTime}.</p>
-          </div>
-        </section>
-
         <section className="section section--classics" id="menu">
           <div className="section__heading">
-            <p className="section__label">Suosituimmat</p>
-            <h2>Valmiit klassikot</h2>
+            <p className="section__label">{isEnglish ? 'Featured' : 'Suosituimmat'}</p>
+            <h2>{isEnglish ? 'Ready-made classics' : 'Valmiit klassikot'}</h2>
             <p>
               <Link className="inline-link" to="/menu">
-                Avaa koko menu -&gt;
+                {isEnglish ? 'Open full menu ->' : 'Avaa koko menu ->'}
               </Link>
             </p>
           </div>
@@ -302,28 +307,17 @@ function MainPage() {
           <div className="menu-grid">
             {menuItems.map(item => {
               const priceCents = Number(item.priceCents || 0);
-              const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
-              const showDiscount = offerActive && priceCents > 0;
 
               return (
                 <Link
                   className="menu-card menu-card--clickable"
                   key={item.id || item.name}
-                  to={`/menu#pizza-${item.id}`}
-                  onClick={() => handleFeaturedClick(item)}
+                  to={`/menu?focus=${encodeURIComponent(item.id)}#pizza-${encodeURIComponent(item.id)}`}
                 >
-                  {showDiscount && <span className="menu-card__badge">-{discountPercent}%</span>}
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>
                   <div className="price-row">
-                    {showDiscount ? (
-                      <>
-                        <span className="menu-card__price-old">{formatPriceCents(priceCents)}</span>
-                        <span className="menu-card__price-discount">{formatPriceCents(discountedCents)}</span>
-                      </>
-                    ) : (
-                      <span className="menu-card__price-normal">{formatPriceCents(priceCents)}</span>
-                    )}
+                    <span className="menu-card__price-normal">{formatPriceCents(priceCents)}</span>
                   </div>
                 </Link>
               );

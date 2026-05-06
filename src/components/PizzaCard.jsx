@@ -1,7 +1,8 @@
-import '../css/menu_style.css';
+import {useEffect, useRef, useState} from 'react';
 import {useOffer} from '../contexts/OfferContext';
 import {isLunchOfferActive, applyLunchDiscount, formatEuro} from '../utils/offer';
 import {resolveImageUrl} from '../utils/imageUrls';
+import '../css/menu_style.css';
 
 /**
  * Pizza menu card component.
@@ -16,6 +17,7 @@ import {resolveImageUrl} from '../utils/imageUrls';
  * @param {number} props.cartQuantity - Current quantity in cart
  * @param {Function} props.onQuantityChange - Callback for quantity change
  * @param {string} props.anchorId - HTML id for scroll anchor
+ * @param {boolean} props.highlighted - Whether the card is highlighted by routing
  * @returns {React.ReactElement} Pizza card JSX
  */
 function PizzaCard({
@@ -26,23 +28,81 @@ function PizzaCard({
   cartQuantity = 0,
   onQuantityChange,
   anchorId,
+  highlighted = false,
 }) {
   const {offer} = useOffer();
   const isInCart = cartQuantity > 0;
+  const previousQuantityRef = useRef(cartQuantity);
+  const [quantityAnimation, setQuantityAnimation] = useState('');
+  const [addAnimation, setAddAnimation] = useState('');
+  const addAnimationTimeoutRef = useRef(null);
   const priceCents = Number.isFinite(Number(pizza.priceCents)) ? Number(pizza.priceCents) : Math.round((parseFloat(String(pizza.price || '0').replace(',', '.')) || 0) * 100);
   const offerActive = isLunchOfferActive(new Date(), offer);
   const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
 
+  function handleAdd() {
+    if (addAnimationTimeoutRef.current) {
+      window.clearTimeout(addAnimationTimeoutRef.current);
+    }
+
+    setAddAnimation('pizza-card__image-button--bounce');
+
+    addAnimationTimeoutRef.current = window.setTimeout(() => {
+      setAddAnimation('');
+    }, 320);
+
+    onAdd?.(pizza);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (addAnimationTimeoutRef.current) {
+        window.clearTimeout(addAnimationTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousQuantity = previousQuantityRef.current;
+
+    if (previousQuantity !== cartQuantity && cartQuantity > 0) {
+      setQuantityAnimation(
+        cartQuantity > previousQuantity
+          ? 'pizza-card__quantity-badge--grow'
+          : 'pizza-card__quantity-badge--shrink'
+      );
+
+      const timeoutId = window.setTimeout(() => {
+        setQuantityAnimation('');
+      }, 220);
+
+      previousQuantityRef.current = cartQuantity;
+
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    previousQuantityRef.current = cartQuantity;
+  }, [cartQuantity]);
+
   return (
-    <article className="pizza-card" id={anchorId}>
+    <article className={`pizza-card${highlighted ? ' pizza-card--highlighted' : ''}`} id={anchorId}>
       <button
         type="button"
-        className="pizza-card__image-button"
-        onClick={() => onAdd?.(pizza)}
+        className={`pizza-card__image-button ${addAnimation}`.trim()}
+        onClick={handleAdd}
         aria-label={`Lisää ${pizza.name} koriin`}
       >
+        <span className="pizza-card__stars" aria-hidden="true">
+          <span className="pizza-card__star pizza-card__star--1" />
+          <span className="pizza-card__star pizza-card__star--2" />
+          <span className="pizza-card__star pizza-card__star--3" />
+          <span className="pizza-card__star pizza-card__star--4" />
+        </span>
         {cartQuantity > 0 ? (
-          <span className="pizza-card__quantity-badge" aria-hidden="true">
+          <span
+            className={`pizza-card__quantity-badge ${quantityAnimation}`.trim()}
+            aria-hidden="true"
+          >
             {cartQuantity}
           </span>
         ) : null}

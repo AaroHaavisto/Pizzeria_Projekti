@@ -1,8 +1,10 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
+import {fetchCustomerOrders} from '../api/orderApi';
 import Navigation from '../components/Navigation';
 import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {useLanguage} from '../contexts/LanguageContext';
 import '../css/auth_style.css';
 
 const initialFormState = {
@@ -14,6 +16,8 @@ const initialFormState = {
 
 function AccountPage() {
   const location = useLocation();
+  const {language} = useLanguage();
+  const isEnglish = language === 'en';
   const {
     customer: currentCustomer,
     loginCustomer,
@@ -25,6 +29,9 @@ function AccountPage() {
   const [formData, setFormData] = useState(initialFormState);
   const [feedback, setFeedback] = useState({type: '', message: ''});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState('');
 
   const isRegistration = mode === 'register';
   const favoriteLocations = [
@@ -38,11 +45,17 @@ function AccountPage() {
   const title = useMemo(
     () =>
       currentCustomer
-        ? `Tervetuloa takaisin, ${currentCustomer.name}.`
+        ? isEnglish
+          ? `Welcome back, ${currentCustomer.name}.`
+          : `Tervetuloa takaisin, ${currentCustomer.name}.`
         : isRegistration
-          ? 'Luo asiakastili nopeaa tilaamista varten.'
-          : 'Kirjaudu sisään ja jatka tilausta siitä mihin jäit.',
-    [currentCustomer, isRegistration]
+          ? isEnglish
+            ? 'Create an account for faster ordering.'
+            : 'Luo asiakastili nopeaa tilaamista varten.'
+          : isEnglish
+            ? 'Log in and continue your order from where you left off.'
+            : 'Kirjaudu sisään ja jatka tilausta siitä mihin jäit.',
+    [currentCustomer, isRegistration, isEnglish]
   );
 
   useEffect(() => {
@@ -54,6 +67,42 @@ function AccountPage() {
     const nextMode = params.get('mode') === 'register' ? 'register' : 'login';
     setMode(nextMode);
   }, [currentCustomer, location.search]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadOrders() {
+      if (!currentCustomer?.id) {
+        setOrders([]);
+        setOrdersError('');
+        return;
+      }
+
+      try {
+        setOrdersLoading(true);
+        setOrdersError('');
+        const nextOrders = await fetchCustomerOrders(currentCustomer.id);
+
+        if (mounted) {
+          setOrders(nextOrders);
+        }
+      } catch {
+        if (mounted) {
+          setOrdersError(isEnglish ? 'Unable to load your orders.' : 'Tilausten lataaminen epäonnistui.');
+        }
+      } finally {
+        if (mounted) {
+          setOrdersLoading(false);
+        }
+      }
+    }
+
+    loadOrders();
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentCustomer?.id, isEnglish]);
 
   function resetFeedback() {
     setFeedback({type: '', message: ''});
@@ -94,7 +143,9 @@ function AccountPage() {
 
         setFeedback({
           type: 'success',
-          message: 'Tili luotu onnistuneesti. Voit nyt kirjautua sisään.',
+          message: isEnglish
+            ? 'Account created successfully. You can now log in.'
+            : 'Tili luotu onnistuneesti. Voit nyt kirjautua sisään.',
         });
         setFormData(initialFormState);
         setMode('login');
@@ -115,7 +166,10 @@ function AccountPage() {
         return;
       }
 
-      setFeedback({type: 'success', message: 'Kirjautuminen onnistui.'});
+      setFeedback({
+        type: 'success',
+        message: isEnglish ? 'Log in successful.' : 'Kirjautuminen onnistui.',
+      });
       setFormData(initialFormState);
     } finally {
       setIsSubmitting(false);
@@ -124,7 +178,10 @@ function AccountPage() {
 
   function handleLogout() {
     logoutCustomer();
-    setFeedback({type: 'success', message: 'Olet kirjautunut ulos.'});
+    setFeedback({
+      type: 'success',
+      message: isEnglish ? 'You have been logged out.' : 'Olet kirjautunut ulos.',
+    });
   }
 
   return (
@@ -133,7 +190,7 @@ function AccountPage() {
         <Navigation />
 
         <section className="hero__content account-hero" id="kirjautuminen">
-          <p className="eyebrow">Asiakastili</p>
+          <p className="eyebrow">{isEnglish ? 'Account' : 'Asiakastili'}</p>
           <h1>{title}</h1>
         </section>
       </header>
@@ -141,22 +198,22 @@ function AccountPage() {
       <main className="account-layout">
         {currentCustomer ? (
           <aside className="account-panel account-panel--summary account-panel--full">
-            <p className="section__label">Tila</p>
-            <h2>Asiakastilin yhteenveto</h2>
+            <p className="section__label">{isEnglish ? 'Status' : 'Tila'}</p>
+            <h2>{isEnglish ? 'Account summary' : 'Asiakastilin yhteenveto'}</h2>
 
             <div className="session-card">
               <p>
-                <strong>Kirjautunut käyttäjä:</strong> {currentCustomer.name}
+                <strong>{isEnglish ? 'Logged-in user:' : 'Kirjautunut käyttäjä:'}</strong> {currentCustomer.name}
               </p>
               <p>
-                <strong>Sähköposti:</strong> {currentCustomer.email}
+                <strong>{isEnglish ? 'Email:' : 'Sähköposti:'}</strong> {currentCustomer.email}
               </p>
             </div>
 
             <div className="account-dashboard">
               <article className="account-dashboard__card">
-                <p className="section__label">Lempi sijainnit</p>
-                <h3>Pääsijainti</h3>
+                <p className="section__label">{isEnglish ? 'Favorite locations' : 'Lempi sijainnit'}</p>
+                <h3>{isEnglish ? 'Primary location' : 'Pääsijainti'}</h3>
                 {favoriteLocations.map(locationItem => (
                   <div className="account-dashboard__item" key={locationItem.name}>
                     <p>
@@ -164,15 +221,15 @@ function AccountPage() {
                     </p>
                     <p>{locationItem.description}</p>
                     <Link className="button button--secondary" to={locationItem.href}>
-                      Muokkaa
+                      {isEnglish ? 'Edit' : 'Muokkaa'}
                     </Link>
                   </div>
                 ))}
               </article>
 
               <article className="account-dashboard__card">
-                <p className="section__label">Ostoslista</p>
-                <h3>Korissa nyt</h3>
+                <p className="section__label">{isEnglish ? 'Shopping list' : 'Ostoslista'}</p>
+                <h3>{isEnglish ? 'In the cart now' : 'Korissa nyt'}</h3>
                 {cartItems.filter(item => item.quantity > 0).length > 0 ? (
                   <ul className="account-dashboard__list">
                     {cartItems
@@ -183,14 +240,61 @@ function AccountPage() {
                           <span>
                             {item.name} x{item.quantity}
                           </span>
+                          <span>
+                            {new Intl.NumberFormat('fi-FI', {style: 'currency', currency: 'EUR'}).format((Number(item.priceCents || 0) * Number(item.quantity || 0)) / 100)}
+                          </span>
                         </li>
                       ))}
                   </ul>
                 ) : (
-                  <p>Ostoslista on tyhjä.</p>
+                  <p>{isEnglish ? 'The shopping list is empty.' : 'Ostoslista on tyhjä.'}</p>
                 )}
                 <Link className="button button--secondary" to="/cart">
-                  Muokkaa
+                  {isEnglish ? 'Edit' : 'Muokkaa'}
+                </Link>
+              </article>
+
+              <article className="account-dashboard__card account-dashboard__card--orders">
+                <p className="section__label">{isEnglish ? 'Orders' : 'Tilaukset'}</p>
+                <h3 id="tilaukset">{currentCustomer.name}</h3>
+
+                {ordersLoading ? <p>{isEnglish ? 'Loading orders...' : 'Ladataan tilauksia...'}</p> : null}
+                {ordersError ? <p className="feedback feedback--error">{ordersError}</p> : null}
+
+                {!ordersLoading && !ordersError && orders.length > 0 ? (
+                  <div className="account-orders">
+                    {orders.map(order => (
+                      <article className="account-orders__item" key={order.id}>
+                        <div className="account-orders__header">
+                          <strong>#{order.id}</strong>
+                          <span>{new Intl.DateTimeFormat('fi-FI', {dateStyle: 'short', timeStyle: 'short'}).format(new Date(order.createdAt))}</span>
+                        </div>
+                        <p>
+                          {isEnglish ? 'Total' : 'Yhteensä'} {new Intl.NumberFormat('fi-FI', {style: 'currency', currency: 'EUR'}).format(Number(order.totalAmount || 0))}
+                        </p>
+                        <ul className="account-orders__items">
+                          {order.items.map(item => (
+                            <li key={item.id}>
+                              <span>{item.name} x{item.quantity}</span>
+                              <span>
+                                {new Intl.NumberFormat('fi-FI', {style: 'currency', currency: 'EUR'}).format(Number(item.discountedUnitPrice ?? item.originalUnitPrice ?? 0))}
+                                {' / '}
+                                {new Intl.NumberFormat('fi-FI', {style: 'currency', currency: 'EUR'}).format(Number(item.lineTotal || 0))}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+
+                {!ordersLoading && !ordersError && orders.length === 0 ? (
+                  <p>{isEnglish ? 'No saved orders yet.' : 'Tallennettuja tilauksia ei vielä ole.'}</p>
+                ) : null}
+
+                <Link className="button button--secondary" to="/feedback">
+                  {isEnglish ? 'Give feedback' : 'Anna palautetta'}
                 </Link>
               </article>
             </div>
@@ -200,38 +304,38 @@ function AccountPage() {
               className="button button--secondary session-card__button"
               onClick={handleLogout}
             >
-              Kirjaudu ulos
+              {isEnglish ? 'Log out' : 'Kirjaudu ulos'}
             </button>
           </aside>
         ) : (
           <section className="account-panel account-panel--form account-panel--full">
-            <div className="account-panel__tabs" role="tablist" aria-label="Tili">
+            <div className="account-panel__tabs" role="tablist" aria-label={isEnglish ? 'Account' : 'Tili'}>
               <button
                 type="button"
                 className={`tab-button${isRegistration ? '' : ' tab-button--active'}`}
                 onClick={() => handleModeChange('login')}
               >
-                Kirjaudu
+                {isEnglish ? 'Log in' : 'Kirjaudu'}
               </button>
               <button
                 type="button"
                 className={`tab-button${isRegistration ? ' tab-button--active' : ''}`}
                 onClick={() => handleModeChange('register')}
               >
-                Rekisteröidy
+                {isEnglish ? 'Register' : 'Rekisteröidy'}
               </button>
             </div>
 
             <form className="account-form" onSubmit={handleSubmit}>
               {isRegistration && (
                 <label className="field">
-                  <span>Nimi</span>
+                  <span>{isEnglish ? 'Name' : 'Nimi'}</span>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="Etunimi Sukunimi"
+                    placeholder={isEnglish ? 'First name Last name' : 'Etunimi Sukunimi'}
                     autoComplete="name"
                     required
                   />
@@ -239,26 +343,26 @@ function AccountPage() {
               )}
 
               <label className="field">
-                <span>Sähköposti</span>
+                <span>{isEnglish ? 'Email' : 'Sähköposti'}</span>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="asiakas@esimerkki.fi"
+                  placeholder={isEnglish ? 'customer@example.com' : 'asiakas@esimerkki.fi'}
                   autoComplete="email"
                   required
                 />
               </label>
 
               <label className="field">
-                <span>Salasana</span>
+                <span>{isEnglish ? 'Password' : 'Salasana'}</span>
                 <input
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Vähintään 6 merkkiä"
+                  placeholder={isEnglish ? 'At least 6 characters' : 'Vähintään 6 merkkiä'}
                   autoComplete={
                     isRegistration ? 'new-password' : 'current-password'
                   }
@@ -268,13 +372,13 @@ function AccountPage() {
 
               {isRegistration && (
                 <label className="field">
-                  <span>Vahvista salasana</span>
+                  <span>{isEnglish ? 'Confirm password' : 'Vahvista salasana'}</span>
                   <input
                     type="password"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    placeholder="Kirjoita salasana uudelleen"
+                    placeholder={isEnglish ? 'Repeat the password' : 'Kirjoita salasana uudelleen'}
                     autoComplete="new-password"
                     required
                   />
@@ -296,10 +400,10 @@ function AccountPage() {
                 disabled={isSubmitting}
               >
                 {isSubmitting
-                  ? 'Lähetetään...'
+                  ? (isEnglish ? 'Sending...' : 'Lähetetään...')
                   : isRegistration
-                    ? 'Luo tili'
-                    : 'Kirjaudu sisään'}
+                    ? (isEnglish ? 'Create account' : 'Luo tili')
+                    : (isEnglish ? 'Log in' : 'Kirjaudu sisään')}
               </button>
             </form>
           </section>

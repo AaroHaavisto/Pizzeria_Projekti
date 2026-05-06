@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
+import {useLanguage} from '../contexts/LanguageContext';
 
 const RESTAURANT_COORDS = [60.16880, 24.93265];
 const RESTAURANT_ADDRESS = 'Urho Kekkosen katu 1, 00100 Helsinki';
@@ -16,9 +17,12 @@ const restaurantMarker = L.divIcon({
 });
 
 function LocationPage() {
+  const {language} = useLanguage();
+  const isEnglish = language === 'en';
+
   useEffect(() => {
-    document.title = 'Sijainti - Pizzeria Pro';
-  }, []);
+    document.title = isEnglish ? 'Location - Pizzeria Pro' : 'Sijainti - Pizzeria Pro';
+  }, [isEnglish]);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(RESTAURANT_ADDRESS)}`;
 
@@ -28,7 +32,7 @@ function LocationPage() {
         <Navigation />
         <section className="hero__content hero__content--location">
           <div className="location-hero">
-            <h1>Sijainti</h1>
+            <h1>{isEnglish ? 'Location' : 'Sijainti'}</h1>
             <p>{RESTAURANT_ADDRESS}</p>
           </div>
         </section>
@@ -53,10 +57,10 @@ function LocationPage() {
 
           <div className="location-map__actions">
             <a className="button button--primary" href={mapsUrl} target="_blank" rel="noopener noreferrer">
-              Kartta
+              {isEnglish ? 'Map' : 'Kartta'}
             </a>
             <a className="button button--secondary" href={HSL_ROUTE_URL} target="_blank" rel="noopener noreferrer">
-              HSL Reitti
+              {isEnglish ? 'Transit route' : 'HSL Reitti'}
             </a>
           </div>
         </section>

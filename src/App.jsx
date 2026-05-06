@@ -8,6 +8,7 @@ import {
 import MainPage from './pages/MainPage';
 import MenuPage from './pages/MenuPage';
 import AccountPage from './pages/AccountPage';
+import FeedbackPage from './pages/FeedbackPage';
 import LocationPage from './pages/LocationPage';
 import OfferBanner from './components/OfferBanner';
 import {CustomerSessionProvider} from './contexts/CustomerSessionContext';
@@ -67,6 +68,7 @@ function App() {
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/account" element={<AccountPage />} />
+                  <Route path="/feedback" element={<FeedbackPage />} />
                 </Routes>
               </Router>
             </CartProvider>

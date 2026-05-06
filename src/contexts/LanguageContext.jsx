@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import {createContext, useContext, useEffect, useState} from 'react';
 
 const LanguageContext = createContext();
 
@@ -8,18 +8,27 @@ const LanguageContext = createContext();
  * @param {React.ReactNode} children - Child components
  */
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('fi');
+  const [language, setLanguage] = useState(() => {
+    if (typeof window === 'undefined') {
+      return 'fi';
+    }
 
-  // Load language preference from localStorage on mount
+    const savedLanguage = window.localStorage.getItem('appLanguage');
+    return savedLanguage === 'en' ? 'en' : 'fi';
+  });
+
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('appLanguage') || 'fi';
-    setLanguage(savedLanguage);
-  }, []);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
 
-  // Save language preference to localStorage when it changes
-  const changeLanguage = (lang) => {
-    setLanguage(lang);
-    localStorage.setItem('appLanguage', lang);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('appLanguage', language);
+    }
+  }, [language]);
+
+  const changeLanguage = nextLanguage => {
+    setLanguage(nextLanguage === 'en' ? 'en' : 'fi');
   };
 
   return (

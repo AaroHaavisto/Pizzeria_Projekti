@@ -67,7 +67,12 @@ function OrderSuccessModal({order, onClose}) {
                 <ul>
                   {order.items.map(item => (
                     <li key={item.id}>
-                      {item.quantity}x tuote (ID: {item.menuItemId}) –{' '}
+                      {item.name || `ID ${item.menuItemId}`} x{item.quantity} –{' '}
+                      {new Intl.NumberFormat('fi-FI', {
+                        style: 'currency',
+                        currency: 'EUR',
+                      }).format(Number(item.discountedUnitPrice ?? item.originalUnitPrice ?? 0))}
+                      {' / '}
                       {new Intl.NumberFormat('fi-FI', {
                         style: 'currency',
                         currency: 'EUR',
