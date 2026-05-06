@@ -2,6 +2,7 @@ import {Link} from 'react-router-dom';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useCart} from '../contexts/CartContext';
 import {useLanguage} from '../contexts/LanguageContext';
+import {isAdminCustomer} from '../utils/adminAuth';
 
 /**
  * Main navigation bar component.
@@ -13,26 +14,35 @@ function Navigation() {
   const {itemCount} = useCart();
   const {language, changeLanguage} = useLanguage();
 
+  const isAdmin = isAdminCustomer(customer);
+
   return (
     <nav className="topbar" aria-label="Päävalikko">
       <Link className="brand" to="/">
         Pizzeria Pro
       </Link>
+
       <div className="topbar__links">
         <div className="topbar__group">
           <Link to="/" className="topbar__trigger">
             Etusivu
           </Link>
+
           <div className="topbar__dropdown" role="menu" aria-label="Etusivu">
             <Link to="/">Yleiskatsaus</Link>
             <Link to="/#tarjoukset">Tarjoukset</Link>
           </div>
         </div>
+
         <Link to="/menu">Menu</Link>
         <Link to="/location">Sijainti</Link>
+
         <Link to="/cart">
           Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
         </Link>
+
+        {isAdmin ? <Link to="/admin">Admin</Link> : null}
+
         <div className="topbar__group">
           <Link
             className="topbar__trigger topbar__button"
@@ -40,14 +50,23 @@ function Navigation() {
           >
             Käyttäjä
           </Link>
+
           <div className="topbar__dropdown" role="menu" aria-label="Käyttäjä">
             {customer ? (
               <>
                 <p className="topbar__userline">Kirjautunut: {customer.name}</p>
                 <p className="topbar__userline">{customer.email}</p>
+
                 <Link className="topbar__dropdown-link" to="/account">
                   Tilitiedot
                 </Link>
+
+                {isAdmin ? (
+                  <Link className="topbar__dropdown-link" to="/admin">
+                    Admin
+                  </Link>
+                ) : null}
+
                 <button
                   className="topbar__button topbar__dropdown-button"
                   type="button"
@@ -66,20 +85,30 @@ function Navigation() {
             )}
           </div>
         </div>
+
         <div className="topbar__group">
-          <button className="topbar__trigger topbar__button topbar__lang-trigger" type="button">
+          <button
+            className="topbar__trigger topbar__button topbar__lang-trigger"
+            type="button"
+          >
             {language.toUpperCase()}
           </button>
+
           <div className="topbar__dropdown" role="menu" aria-label="Kieli">
             <button
-              className={`topbar__button topbar__dropdown-button ${language === 'fi' ? 'topbar__lang-active' : ''}`}
+              className={`topbar__button topbar__dropdown-button ${
+                language === 'fi' ? 'topbar__lang-active' : ''
+              }`}
               type="button"
               onClick={() => changeLanguage('fi')}
             >
               Suomi
             </button>
+
             <button
-              className={`topbar__button topbar__dropdown-button ${language === 'en' ? 'topbar__lang-active' : ''}`}
+              className={`topbar__button topbar__dropdown-button ${
+                language === 'en' ? 'topbar__lang-active' : ''
+              }`}
               type="button"
               onClick={() => changeLanguage('en')}
             >

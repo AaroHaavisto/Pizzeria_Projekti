@@ -1,0 +1,16 @@
+{
+  "announcements": [
+    {
+      "announcementId": "summer-opening-hours",
+      "title": "Kesän aukioloajat",
+      "content": "Olemme kesällä avoinna joka päivä klo 10–22.",
+      "active": true
+    },
+    {
+      "announcementId": "new-pizza",
+      "title": "Uusi pizza listalla",
+      "content": "Kokeile uutta tulista Diavola-pizzaamme.",
+      "active": true
+    }
+  ]
+}

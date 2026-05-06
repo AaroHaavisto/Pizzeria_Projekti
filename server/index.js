@@ -10,6 +10,7 @@ import menuRoutes from './routes/menuRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import ratingRoutes from './routes/ratingRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import announcementRoutes from './routes/announcementRoutes.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
@@ -42,6 +43,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ratings', ratingRoutes);
+app.use('/api/announcements', announcementRoutes);
 app.use('/api', settingsRoutes);
 
 app.use(errorHandler);
