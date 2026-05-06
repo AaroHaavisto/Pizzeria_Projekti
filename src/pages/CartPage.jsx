@@ -64,7 +64,7 @@ function CartPage() {
       const orderItems = activeItems.map(item => ({
         menuItemId: Number(item.id),
         quantity: item.quantity,
-        unitPrice: item.priceCents,
+        unitPrice: Number.isFinite(Number(item.priceCents)) ? Number(item.priceCents) : 0,
         notes: item.notes || '',
       }));
 

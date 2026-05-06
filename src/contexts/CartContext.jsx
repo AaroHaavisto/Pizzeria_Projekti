@@ -27,7 +27,25 @@ function getInitialCartItems() {
     return [];
   }
 
-  return safeParse(window.localStorage.getItem(CART_STORAGE_KEY), []);
+  const items = safeParse(window.localStorage.getItem(CART_STORAGE_KEY), []);
+  
+  // Validate cart items - if any item is missing required fields, reset cart
+  if (Array.isArray(items)) {
+    const isValid = items.every(item => 
+      item && 
+      typeof item.id !== 'undefined' && 
+      Number.isFinite(Number(item.priceCents)) &&
+      Number.isFinite(Number(item.quantity))
+    );
+    
+    if (isValid) {
+      return items;
+    }
+  }
+  
+  // Clear corrupted cart data
+  window.localStorage.removeItem(CART_STORAGE_KEY);
+  return [];
 }
 
 /**
@@ -42,7 +60,7 @@ function formatCartItem(menuItem) {
     description: menuItem.description,
     image: menuItem.image,
     price: menuItem.price,
-    priceCents: menuItem.priceCents,
+    priceCents: Number.isFinite(Number(menuItem.priceCents)) ? Number(menuItem.priceCents) : 0,
     quantity: 1,
   };
 }
@@ -57,7 +75,8 @@ function sumCartTotals(items) {
     (totals, item) => {
       if (item.quantity > 0) {
         totals.quantity += item.quantity;
-        totals.priceCents += item.priceCents * item.quantity;
+        const itemPrice = Number.isFinite(Number(item.priceCents)) ? Number(item.priceCents) : 0;
+        totals.priceCents += itemPrice * item.quantity;
       }
       return totals;
     },

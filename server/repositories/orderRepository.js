@@ -120,8 +120,28 @@ export async function getOrder(orderId) {
     [orderId]
   );
 
+  const orderRow = orderRows[0];
+  
   return {
-    ...orderRows[0],
-    items: itemRows,
+    id: orderRow.order_id,
+    customerId: orderRow.customer_user_id,
+    locationId: orderRow.location_id,
+    status: orderRow.status,
+    subtotalAmount: Number(orderRow.subtotal_amount),
+    discountPercent: Number(orderRow.discount_percent),
+    discountAmount: Number(orderRow.discount_amount),
+    totalAmount: Number(orderRow.total_amount),
+    createdAt: orderRow.created_at,
+    items: itemRows.map(item => ({
+      id: item.order_item_id,
+      menuItemId: item.menu_item_id,
+      quantity: item.quantity,
+      originalUnitPrice: Number(item.original_unit_price),
+      discountPercent: Number(item.discount_percent),
+      discountAmount: Number(item.discount_amount),
+      discountedUnitPrice: Number(item.discounted_unit_price),
+      lineTotal: Number(item.line_total),
+      notes: item.notes,
+    })),
   };
 }

@@ -572,11 +572,11 @@ app.post('/api/orders', async (req, res) => {
           'Each order item must have menuItemId and quantity >= 1'
         );
       }
-      if (!Number.isFinite(item.unitPrice) || item.unitPrice < 0) {
+      if (!Number.isFinite(item.unitPrice) || item.unitPrice <= 0) {
         throw createHttpError(
           400,
           'VALIDATION_ERROR',
-          'Each order item must have valid unitPrice'
+          'Each order item must have valid unitPrice greater than 0'
         );
       }
     }
