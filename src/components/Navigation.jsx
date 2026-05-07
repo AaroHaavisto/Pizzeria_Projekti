@@ -24,18 +24,22 @@ function Navigation() {
       </Link>
 
       <div className="topbar__links">
+        <Link to="/" className="topbar__link">
+          {isEnglish ? 'Home' : 'Etusivu'}
+        </Link>
+
         <div className="topbar__group">
-          <Link to="/" className="topbar__trigger">
-            {isEnglish ? 'Home' : 'Etusivu'}
+          <Link className="topbar__trigger" to="/menu?filter=all#menu-pizzat">
+            {isEnglish ? 'Menu' : 'Menu'}
           </Link>
 
-          <div className="topbar__dropdown" role="menu" aria-label={isEnglish ? 'Home' : 'Etusivu'}>
-            <Link to="/">{isEnglish ? 'Overview' : 'Yleiskatsaus'}</Link>
-            <Link to="/menu?focus=all#menu-pizzat">{isEnglish ? 'Menu' : 'Menu'}</Link>
+          <div className="topbar__dropdown" role="menu" aria-label={isEnglish ? 'Menu' : 'Menu'}>
+            <Link to="/menu?filter=all#menu-pizzat">{isEnglish ? 'All' : 'Kaikki'}</Link>
+            <Link to="/menu?filter=veg#menu-pizzat">{isEnglish ? 'Veg' : 'Vege'}</Link>
+            <Link to="/menu?filter=meat#menu-pizzat">{isEnglish ? 'Meat' : 'Liha'}</Link>
           </div>
         </div>
 
-        <Link to="/menu">Menu</Link>
         <Link to="/location">{isEnglish ? 'Location' : 'Sijainti'}</Link>
 
         <Link to="/cart">

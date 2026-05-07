@@ -205,14 +205,16 @@ function PizzaCard({
                 className="pizza-card__controls"
                 aria-label={`${pizza.name} määrän säätö`}
               >
-                {cartQuantity >= 2 ? (
-                  <div className="pizza-card__line-total">
-                    {offerActive && priceCents > discountedCents ? (
-                      <div className="pizza-card__save">{language === 'en' ? `You save ${formatEuro((priceCents - discountedCents) * cartQuantity)}` : `Säästät ${formatEuro((priceCents - discountedCents) * cartQuantity)}`}</div>
-                    ) : null}
-                    <div className="pizza-card__total">{language === 'en' ? 'Total' : 'Yhteensä'} {formatEuro((offerActive ? discountedCents : priceCents) * cartQuantity)}</div>
-                  </div>
-                ) : null}
+                <div className="pizza-card__line-total">
+                  {cartQuantity >= 2 ? (
+                    <>
+                      {offerActive && priceCents > discountedCents ? (
+                        <div className="pizza-card__save">{language === 'en' ? `You save ${formatEuro((priceCents - discountedCents) * cartQuantity)}` : `Säästät ${formatEuro((priceCents - discountedCents) * cartQuantity)}`}</div>
+                      ) : null}
+                      <div className="pizza-card__total">{language === 'en' ? 'Total' : 'Yhteensä'} {formatEuro((offerActive ? discountedCents : priceCents) * cartQuantity)}</div>
+                    </>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   className="pizza-card__step-button"

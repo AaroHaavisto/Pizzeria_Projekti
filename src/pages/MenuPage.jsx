@@ -1,11 +1,8 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Link, useLocation} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import PizzaCard from '../components/PizzaCard';
-import {
-  getWeeklyMenuData,
-  getWeeklyMenuSections,
-} from '../api/menuApi';
+import {getWeeklyMenuData, getWeeklyMenuSections} from '../api/menuApi';
 import {useCart} from '../contexts/CartContext';
 import {useLanguage} from '../contexts/LanguageContext';
 import '../css/menu_style.css';
@@ -25,17 +22,51 @@ function flattenMenuItems(menuData) {
 }
 
 function MenuPage() {
-  const {addToCart, items, updateQuantity, itemCount, totalCents, cartLimitReached, cartLimitMessage, removeFromCart} = useCart();
+  const {
+    addToCart,
+    items,
+    updateQuantity,
+    itemCount,
+    totalCents,
+    cartLimitReached,
+    cartLimitMessage,
+    removeFromCart,
+  } = useCart();
   const {language} = useLanguage();
   const isEnglish = language === 'en';
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [sections, setSections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [menuFilter, setMenuFilter] = useState('all');
+  const [menuFilter, setMenuFilter] = useState(() => {
+    if (typeof window === 'undefined') {
+      return 'all';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const initialFilter = params.get('filter');
+
+    if (initialFilter === 'veg' || initialFilter === 'meat' || initialFilter === 'all') {
+      return initialFilter;
+    }
+
+    return 'all';
+  });
   const [highlightedPizzaId, setHighlightedPizzaId] = useState('');
   const [highlightAllPizzas, setHighlightAllPizzas] = useState(false);
+
+  const filterFromUrl = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const nextFilter = params.get('filter');
+
+    if (nextFilter === 'veg' || nextFilter === 'meat' || nextFilter === 'all') {
+      return nextFilter;
+    }
+
+    return '';
+  }, [location.search]);
 
   async function loadMenuData() {
     const [nextSections, nextMenuData] = await Promise.all([
@@ -56,7 +87,9 @@ function MenuPage() {
         await loadMenuData();
       } catch {
         if (mounted) {
-          setLoadError(isEnglish ? 'Failed to load the menu.' : 'Menun lataaminen epäonnistui.');
+          setLoadError(
+            isEnglish ? 'Failed to load the menu.' : 'Menun lataaminen epäonnistui.'
+          );
         }
       } finally {
         if (mounted) {
@@ -70,7 +103,13 @@ function MenuPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isEnglish]);
+
+  useEffect(() => {
+    if (filterFromUrl && filterFromUrl !== menuFilter) {
+      setMenuFilter(filterFromUrl);
+    }
+  }, [filterFromUrl, menuFilter]);
 
   const allMenuItems = sections.flatMap(section => section.items);
 
@@ -100,10 +139,10 @@ function MenuPage() {
 
   const filterHeading =
     menuFilter === 'veg'
-      ? (isEnglish ? 'Vegetarian pizzas' : 'Vege pizzat')
+      ? isEnglish ? 'Vegetarian pizzas' : 'Vege pizzat'
       : menuFilter === 'meat'
-        ? (isEnglish ? 'Meat pizzas' : 'Lihapizzat')
-        : (isEnglish ? 'All pizzas' : 'Kaikki pizzat');
+        ? isEnglish ? 'Meat pizzas' : 'Lihapizzat'
+        : isEnglish ? 'All pizzas' : 'Kaikki pizzat';
 
   function handleQuantityChange(pizza, nextQuantity) {
     updateQuantity(pizza.id, nextQuantity);
@@ -126,7 +165,7 @@ function MenuPage() {
       return undefined;
     }
 
-    target.scrollIntoView({behavior: 'smooth', block: 'center'});
+    target.scrollIntoView({behavior: 'smooth', block: 'start'});
     target.classList.add('section--focus');
 
     const timeoutId = window.setTimeout(() => {
@@ -139,6 +178,11 @@ function MenuPage() {
     };
   }, [selectedFocus]);
 
+  function handleFilterChange(nextFilter) {
+    setMenuFilter(nextFilter);
+    navigate(`/menu?filter=${nextFilter}#menu-pizzat`, {replace: true});
+  }
+
   return (
     <div className="menu-page">
       <header className="hero">
@@ -146,7 +190,11 @@ function MenuPage() {
 
         <section className="hero__content">
           <p className="eyebrow">{isEnglish ? 'Full selection' : 'Koko valikoima'}</p>
-          <h1 id="menu">{isEnglish ? 'Find a favorite pizza for every hunger level.' : 'Löydä suosikkipizza jokaiseen nälkätasoon.'}</h1>
+          <h1 id="menu">
+            {isEnglish
+              ? 'Find a favorite pizza for every hunger level.'
+              : 'Löydä suosikkipizza jokaiseen nälkätasoon.'}
+          </h1>
           <p className="hero__text menu-hero-text">
             {isEnglish ? 'Filter pizzas by ingredients.' : 'Suodata pizzat aineiden mukaan.'}
           </p>
@@ -172,36 +220,103 @@ function MenuPage() {
         {isLoading ? <p>{isEnglish ? 'Loading menu...' : 'Ladataan menua...'}</p> : null}
         {loadError ? <p>{loadError}</p> : null}
 
+        <div className="menu-filter-inline">
+          <div className="menu-filter-inline__buttons">
+            <button
+              className={`chip-link chip-link--button${
+                menuFilter === 'veg' ? ' chip-link--button--active' : ''
+              }`}
+              type="button"
+              onClick={() => handleFilterChange('veg')}
+            >
+              {isEnglish ? 'Veg' : 'Vege'}
+            </button>
+
+            <button
+              className={`chip-link chip-link--button${
+                menuFilter === 'meat' ? ' chip-link--button--active' : ''
+              }`}
+              type="button"
+              onClick={() => handleFilterChange('meat')}
+            >
+              {isEnglish ? 'Meat' : 'Liha'}
+            </button>
+
+            <button
+              className={`chip-link chip-link--button${
+                menuFilter === 'all' ? ' chip-link--button--active' : ''
+              }`}
+              type="button"
+              onClick={() => handleFilterChange('all')}
+            >
+              {isEnglish ? 'All' : 'Kaikki'}
+            </button>
+          </div>
+          <h2>{filterHeading}</h2>
+        </div>
+
         <section className="menu-summary-card">
           <p className="section__label">{isEnglish ? 'Order' : 'Tilaus'}</p>
-          <h2>{isEnglish ? 'Easy pickup and clear pricing' : 'Helppo nouto ja selkeä hinnoittelu'}</h2>
+          <h2>
+            {isEnglish ? 'Easy pickup and clear pricing' : 'Helppo nouto ja selkeä hinnoittelu'}
+          </h2>
 
           <div className="menu-summary-card__stats">
-            <span>{allMenuItems.length} {isEnglish ? 'pizzas on the list' : 'pizzaa listalla'}</span>
-            <span>{itemCount} {isEnglish ? 'items in the cart' : 'tuotetta korissa'}</span>
             <span>
-              {(totalCents / 100).toFixed(2).replace('.', ',')} € {isEnglish ? 'total' : 'yhteensä'}
+              {allMenuItems.length} {isEnglish ? 'pizzas on the list' : 'pizzaa listalla'}
+            </span>
+            <span>
+              {itemCount} {isEnglish ? 'items in the cart' : 'tuotetta korissa'}
+            </span>
+            <span>
+              {(totalCents / 100).toFixed(2).replace('.', ',')} €{' '}
+              {isEnglish ? 'total' : 'yhteensä'}
             </span>
           </div>
 
           {cartLimitReached ? (
-            <p className="cart-limit" role="status">{cartLimitMessage}</p>
+            <p className="cart-limit" role="status">
+              {cartLimitMessage}
+            </p>
           ) : null}
 
           {items.length > 0 ? (
             <div className="menu-summary-card__cart-preview">
               <p className="section__label">{isEnglish ? 'My purchases' : 'Omat ostokset'}</p>
-              <ul>
+              <ul className="menu-preview-list">
                 {previewCartItems.map(item => (
                   <li key={item.id} className="menu-preview-item">
-                    <label className="menu-preview-item__remove">
-                      <input
-                        type="checkbox"
+                    <div className="menu-preview-item__info">
+                      <strong>{item.name}</strong>
+                      <span>x{item.quantity}</span>
+                    </div>
+
+                    <div className="menu-preview-item__controls">
+                      <button
+                        type="button"
+                        className="quantity-button menu-preview-item__quantity-button"
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        aria-label={isEnglish ? `Decrease ${item.name}` : `Vähennä tuotetta ${item.name}`}
+                      >
+                        -
+                      </button>
+                      <button
+                        type="button"
+                        className="quantity-button menu-preview-item__quantity-button"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        aria-label={isEnglish ? `Increase ${item.name}` : `Lisää tuotetta ${item.name}`}
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        className="menu-preview-item__remove"
+                        onClick={() => removeFromCart(item.id)}
                         aria-label={isEnglish ? `Remove ${item.name} from cart` : `Poista ${item.name} korista`}
-                        onChange={() => removeFromCart(item.id)}
-                      />
-                    </label>
-                    {item.name} x{item.quantity}
+                      >
+                        ×
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -211,56 +326,6 @@ function MenuPage() {
 
         <div className="menu-days" id="menu-lista">
           <section className="day-section day-section--today day-section--menu" id="menu-pizzat">
-            <div className="section__heading">
-              <div className="menu-filter-inline">
-                <div className="menu-filter-inline__buttons">
-                  <button
-                    className={`chip-link chip-link--button${
-                      menuFilter === 'veg' ? ' chip-link--button--active' : ''
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setMenuFilter('veg');
-                      const target = document.getElementById('menu-pizzat');
-                      if (target) target.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    }}
-                  >
-                    {isEnglish ? 'Veg' : 'Vege'}
-                  </button>
-
-                  <button
-                    className={`chip-link chip-link--button${
-                      menuFilter === 'meat' ? ' chip-link--button--active' : ''
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setMenuFilter('meat');
-                      const target = document.getElementById('menu-pizzat');
-                      if (target) target.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    }}
-                  >
-                    {isEnglish ? 'Meat' : 'Liha'}
-                  </button>
-
-                  <button
-                    className={`chip-link chip-link--button${
-                      menuFilter === 'all' ? ' chip-link--button--active' : ''
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setMenuFilter('all');
-                      const target = document.getElementById('menu-pizzat');
-                      if (target) target.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    }}
-                  >
-                    {isEnglish ? 'All' : 'Kaikki'}
-                  </button>
-                </div>
-
-                <h2>{filterHeading}</h2>
-              </div>
-            </div>
-
             <div className="pizza-grid">
               {visibleMenuItems.map(pizza => (
                 <PizzaCard
@@ -277,7 +342,11 @@ function MenuPage() {
             </div>
 
             {visibleMenuItems.length === 0 ? (
-              <p>{isEnglish ? 'No pizzas matched the selected filter.' : 'Pizzoja ei löytynyt valitulla suodatuksella.'}</p>
+              <p>
+                {isEnglish
+                  ? 'No pizzas matched the selected filter.'
+                  : 'Pizzoja ei löytynyt valitulla suodatuksella.'}
+              </p>
             ) : null}
           </section>
         </div>

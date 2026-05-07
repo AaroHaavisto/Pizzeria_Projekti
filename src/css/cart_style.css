@@ -48,24 +48,27 @@
     rgba(255, 252, 248, 0.95)
   );
   transition:
-    opacity 3000ms ease,
-    transform 3000ms ease,
-    background-color 3000ms ease,
-    box-shadow 3000ms ease;
+    opacity 1000ms ease,
+    transform 1000ms ease,
+    background-color 1000ms ease,
+    box-shadow 1000ms ease;
 }
 
 .cart-item--inactive {
-  opacity: 0.66;
+  opacity: 0.88;
   background: linear-gradient(
     160deg,
-    rgba(241, 238, 233, 0.96),
-    rgba(248, 246, 243, 0.98)
+    rgba(250, 248, 246, 0.98),
+    rgba(253, 252, 251, 0.99)
   );
 }
 
 .cart-item--settled {
-  opacity: 0.42;
-  transform: translateY(8px);
+  opacity: 0.6;
+  transform: translateY(6px);
+  border-top: 1px solid rgba(196, 196, 196, 0.42);
+  padding-top: 10px;
+  margin-top: 6px;
 }
 
 .cart-item img {

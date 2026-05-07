@@ -50,7 +50,7 @@ function CartPage() {
   const displayItems = useMemo(() => {
     return items
       .map((item, index) => {
-        const isSettled = item.quantity === 0 && settledZeroItems[item.id] && !hoveredItems[item.id];
+        const isSettled = item.quantity === 0 && Boolean(settledZeroItems[item.id]);
 
         return {
           ...item,
@@ -59,7 +59,7 @@ function CartPage() {
         };
       })
       .sort((left, right) => left.order - right.order);
-  }, [hoveredItems, items, settledZeroItems]);
+  }, [items, settledZeroItems]);
 
   useEffect(() => {
     const timers = zeroTimersRef.current;
@@ -97,7 +97,7 @@ function CartPage() {
       const timeoutId = window.setTimeout(() => {
         setSettledZeroItems(current => ({...current, [item.id]: true}));
         timers.delete(item.id);
-      }, 3000);
+      }, 1000);
 
       timers.set(item.id, timeoutId);
     }
@@ -118,17 +118,19 @@ function CartPage() {
     if (timerId) {
       window.clearTimeout(timerId);
       zeroTimersRef.current.delete(itemId);
+
+      setSettledZeroItems(current => {
+        if (!current[itemId]) {
+          return current;
+        }
+
+        const next = {...current};
+        delete next[itemId];
+        return next;
+      });
     }
 
-    setSettledZeroItems(current => {
-      if (!current[itemId]) {
-        return current;
-      }
-
-      const next = {...current};
-      delete next[itemId];
-      return next;
-    });
+    // if there's no timer the item is already settled; do not bring it back up on hover
   }
 
   async function handleSubmitOrder() {
@@ -234,7 +236,7 @@ function CartPage() {
                         type="button"
                         className="quantity-button"
                         onClick={() =>
-                          updateQuantity(item.id, item.quantity - 1)
+                          updateQuantity(item.id, item.quantity - 1, {preserveOnZero: true})
                         }
                       >
                         -
@@ -251,7 +253,8 @@ function CartPage() {
                             item.id,
                             event.target.value === ''
                               ? 0
-                              : Number(event.target.value)
+                              : Number(event.target.value),
+                            {preserveOnZero: true}
                           )
                         }
                         aria-label={`${item.name} määrä`}
@@ -260,7 +263,7 @@ function CartPage() {
                         type="button"
                         className="quantity-button"
                         onClick={() =>
-                          updateQuantity(item.id, item.quantity + 1)
+                          updateQuantity(item.id, item.quantity + 1, {preserveOnZero: true})
                         }
                       >
                         +

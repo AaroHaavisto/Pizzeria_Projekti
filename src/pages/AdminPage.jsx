@@ -139,6 +139,8 @@ function AdminPage() {
   const {menuData, replaceMenuData, restoreDefaultMenu} = useMenuData();
   const {offer, saveOffer} = useOffer();
 
+  const t = (fi, en) => (isEnglish ? en : fi);
+
   const [menuItems, setMenuItems] = useState(() =>
     flattenMenuItems(menuData).map(createEditableItem)
   );
@@ -244,7 +246,7 @@ function AdminPage() {
     if (!savedItem.itemId || !savedItem.name) {
       setMessage({
         type: 'error',
-        text: 'Pizzalla pitää olla tunnus ja nimi.',
+        text: t('Pizzalla pitää olla tunnus ja nimi.', 'Pizza must have an id and a name.'),
       });
       return;
     }
@@ -263,7 +265,7 @@ function AdminPage() {
     if (duplicateExists) {
       setMessage({
         type: 'error',
-        text: 'Tällä tunnuksella on jo pizza. Valitse toinen tunnus.',
+        text: t('Tällä tunnuksella on jo pizza. Valitse toinen tunnus.', 'An item with this id already exists. Choose another id.'),
       });
       return;
     }
@@ -273,7 +275,7 @@ function AdminPage() {
 
       setMessage({
         type: 'success',
-        text: 'Uusi pizza lisätty. Muista tallentaa pizzamuutokset.',
+        text: t('Uusi pizza lisätty. Muista tallentaa pizzamuutokset.', 'New pizza added. Remember to save menu changes.'),
       });
     } else {
       setMenuItems(previousItems =>
@@ -284,7 +286,7 @@ function AdminPage() {
 
       setMessage({
         type: 'success',
-        text: 'Pizza päivitetty. Muista tallentaa pizzamuutokset.',
+        text: t('Pizza päivitetty. Muista tallentaa pizzamuutokset.', 'Pizza updated. Remember to save menu changes.'),
       });
     }
 
@@ -296,7 +298,10 @@ function AdminPage() {
     const itemName = itemToDelete?.name || 'pizza';
 
     const confirmed = window.confirm(
-      `Haluatko varmasti poistaa pizzan "${itemName}"?`
+      t(
+        `Haluatko varmasti poistaa pizzan "${itemName}"?`,
+        `Are you sure you want to delete the pizza "${itemName}"?`
+      )
     );
 
     if (!confirmed) {
@@ -309,7 +314,7 @@ function AdminPage() {
 
     setMessage({
       type: 'success',
-      text: 'Pizza poistettu listalta. Muista tallentaa pizzamuutokset.',
+      text: t('Pizza poistettu listalta. Muista tallentaa pizzamuutokset.', 'Pizza removed from list. Remember to save menu changes.'),
     });
   }
 
@@ -321,26 +326,26 @@ function AdminPage() {
         !isValidMenuJson({items: savedItems}) ||
         savedItems.some(item => !item.itemId || !item.name)
       ) {
-        throw new Error('Jokaisella pizzalla pitää olla tunnus ja nimi.');
+        throw new Error(t('Jokaisella pizzalla pitää olla tunnus ja nimi.', 'Each pizza must have an id and a name.'));
       }
 
       const itemIds = savedItems.map(item => item.itemId);
       const uniqueItemIds = new Set(itemIds);
 
       if (itemIds.length !== uniqueItemIds.size) {
-        throw new Error('Jokaisella pizzalla pitää olla yksilöllinen tunnus.');
+        throw new Error(t('Jokaisella pizzalla pitää olla yksilöllinen tunnus.', 'Each pizza must have a unique id.'));
       }
 
       await replaceMenuData({items: savedItems});
 
       setMessage({
         type: 'success',
-        text: 'Pizzamenu tallennettu tietokantaan.',
+        text: t('Pizzamenu tallennettu tietokantaan.', 'Menu saved to database.'),
       });
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || 'Tallennus epäonnistui.',
+        text: error.message || t('Tallennus epäonnistui.', 'Save failed.'),
       });
     }
   }
@@ -351,12 +356,12 @@ function AdminPage() {
 
       setMessage({
         type: 'success',
-        text: 'Oletusmenu ladattu uudelleen tietokannasta.',
+        text: t('Oletusmenu ladattu uudelleen tietokannasta.', 'Default menu reloaded from database.'),
       });
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || 'Oletusmenun palautus epäonnistui.',
+        text: error.message || t('Oletusmenun palautus epäonnistui.', 'Failed to restore default menu.'),
       });
     }
   }
@@ -381,7 +386,7 @@ function AdminPage() {
       const payload = toOfferPayload(offerForm);
 
       if (!payload.label || !payload.title) {
-        throw new Error('Tarjouksella pitää olla nimi ja otsikko.');
+        throw new Error(t('Tarjouksella pitää olla nimi ja otsikko.', 'Offer must have a name and a title.'));
       }
 
       if (
@@ -389,7 +394,7 @@ function AdminPage() {
         payload.discountPercent < 0 ||
         payload.discountPercent > 100
       ) {
-        throw new Error('Alennusprosentin pitää olla välillä 0–100.');
+        throw new Error(t('Alennusprosentin pitää olla välillä 0–100.', 'Discount percent must be between 0 and 100.'));
       }
 
       setIsSavingOffer(true);
@@ -399,12 +404,12 @@ function AdminPage() {
 
       setMessage({
         type: 'success',
-        text: 'Lounastarjous tallennettu.',
+        text: t('Lounastarjous tallennettu.', 'Lunch offer saved.'),
       });
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || 'Lounastarjouksen tallennus epäonnistui.',
+        text: error.message || t('Lounastarjouksen tallennus epäonnistui.', 'Failed to save lunch offer.'),
       });
     } finally {
       setIsSavingOffer(false);
@@ -443,7 +448,7 @@ function AdminPage() {
 
       setMessage({
         type: 'success',
-        text: 'Arvosana tallennettu.',
+        text: t('Arvosana tallennettu.', 'Rating saved.'),
       });
 
       try {
@@ -455,7 +460,7 @@ function AdminPage() {
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || 'Arvosanan tallennus epäonnistui.',
+        text: error.message || t('Arvosanan tallennus epäonnistui.', 'Failed to save rating.'),
       });
     } finally {
       setSavingRatingId(null);
@@ -469,18 +474,18 @@ function AdminPage() {
           <Navigation />
 
           <section className="hero__content admin-hero">
-            <p className="eyebrow">Hallinta</p>
-            <h1>Hallintasivu on vain admin-käyttäjille.</h1>
+            <p className="eyebrow">{t('Hallinta', 'Admin')}</p>
+            <h1>{t('Hallintasivu on vain admin-käyttäjille.', 'Admin area is for admin users only.')}</h1>
             <p className="hero__text admin-hero__text">
-              Kirjaudu sisään admin-käyttäjällä nähdäksesi hallintasivun.
+              {t('Kirjaudu sisään admin-käyttäjällä nähdäksesi hallintasivun.', 'Sign in with an admin account to view the admin dashboard.')}
             </p>
 
             <div className="hero__actions">
               <Link className="button button--primary" to="/account">
-                Kirjaudu sisään
+                {t('Kirjaudu sisään', 'Sign in')}
               </Link>
               <Link className="button button--secondary" to="/">
-                Etusivulle
+                {t('Etusivulle', 'Back to home')}
               </Link>
             </div>
           </section>
@@ -495,11 +500,13 @@ function AdminPage() {
         <Navigation />
 
         <section className="hero__content admin-hero">
-          <p className="eyebrow">Hallinta</p>
-          <h1>Slice Huntin hallinta</h1>
+          <p className="eyebrow">{t('Hallinta', 'Admin')}</p>
+          <h1>{t('Slice Huntin hallinta', 'Slice Hunt administration')}</h1>
           <p className="hero__text admin-hero__text">
-            Hallitse pizzoja, lounastarjousta ja etusivun arvosanoja yhdestä
-            näkymästä.
+            {t(
+              'Hallitse pizzoja, lounastarjousta ja etusivun arvosanoja yhdestä näkymästä.',
+              'Manage pizzas, the lunch offer and front page ratings from a single view.'
+            )}
           </p>
 
           {isAdminCustomer(customer) ? (
@@ -514,7 +521,7 @@ function AdminPage() {
               type="button"
               onClick={handleSaveMenu}
             >
-              Tallenna pizzamuutokset
+              {t('Tallenna pizzamuutokset', 'Save menu changes')}
             </button>
 
             <button
@@ -522,7 +529,7 @@ function AdminPage() {
               type="button"
               onClick={handleResetMenu}
             >
-              Palauta oletusmenu
+              {t('Palauta oletusmenu', 'Restore default menu')}
             </button>
           </div>
         </section>

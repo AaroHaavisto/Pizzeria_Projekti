@@ -117,7 +117,7 @@ export function CartProvider({children}) {
 
         if (existing) {
           if (remainingAllowed <= 0) {
-            setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+            setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart. To place a larger order, please contact us at 067 1234567.' : 'Sinulla on jo 100 pizzaa korissa! Jos haluat tehdä suuremman tilauksen, ota meihin yhteyttä ja soita 067 1234567.');
             return {ok: false, message: limitMessage};
           }
 
@@ -137,7 +137,7 @@ export function CartProvider({children}) {
           persist(nextItems);
 
           if (allowedQuantity < nextQuantity) {
-            setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+            setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart. To place a larger order, please contact us at 067 1234567.' : 'Sinulla on jo 100 pizzaa korissa! Jos haluat tehdä suuremman tilauksen, ota meihin yhteyttä ja soita 067 1234567.');
             return {ok: false, message: limitMessage};
           }
 
@@ -145,7 +145,7 @@ export function CartProvider({children}) {
         }
 
         if (remainingAllowed <= 0) {
-          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart. To place a larger order, please contact us at 067 1234567.' : 'Sinulla on jo 100 pizzaa korissa! Jos haluat tehdä suuremman tilauksen, ota meihin yhteyttä ja soita 067 1234567.');
           return {ok: false, message: limitMessage};
         }
 
@@ -160,7 +160,8 @@ export function CartProvider({children}) {
 
         return {ok: true};
       },
-      updateQuantity(itemId, quantity) {
+      updateQuantity(itemId, quantity, options = {}) {
+        const preserveOnZero = Boolean(options.preserveOnZero);
         const resolvedQuantity = Math.trunc(Number(quantity));
 
         if (!Number.isFinite(resolvedQuantity) || resolvedQuantity < 0) {
@@ -185,15 +186,15 @@ export function CartProvider({children}) {
             : item
         );
 
-        // If quantity is zero, remove the item entirely
-        if (nextQuantity === 0) {
+        // If quantity is zero and caller didn't request preserving on-zero, remove the item entirely
+        if (nextQuantity === 0 && !preserveOnZero) {
           nextItems = nextItems.filter(item => item.id !== itemId);
         }
 
         persist(nextItems);
 
         if (resolvedQuantity > allowedForThis) {
-          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart. To place a larger order, please contact us at 067 1234567.' : 'Sinulla on jo 100 pizzaa korissa! Jos haluat tehdä suuremman tilauksen, ota meihin yhteyttä ja soita 067 1234567.');
           return {ok: false, message: limitMessage};
         }
 
@@ -204,6 +205,7 @@ export function CartProvider({children}) {
 
         return {ok: true};
       },
+
       removeFromCart(itemId) {
         persist(items.filter(item => item.id !== itemId));
         if (sumCartTotals(items).quantity < MAX_CART_TOTAL && limitMessage) {
