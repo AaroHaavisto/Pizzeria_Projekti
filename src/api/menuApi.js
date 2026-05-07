@@ -2,8 +2,8 @@ import {getAdminRequestHeaders} from '../utils/adminAuth';
 import fallbackMenuData from '../data/menu.json';
 import {resolveImageUrl} from '../utils/imageUrls';
 
-const MENU_API_ENDPOINT = '/api/menu';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const MENU_API_ENDPOINT = `${API_BASE_URL}/api/menu`;
 /**
  * Formats price in cents to currency string.
  * @param {number} priceCents - Price value in cents

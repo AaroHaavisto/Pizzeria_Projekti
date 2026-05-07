@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function submitOrder({customerId, totalCents, items}) {
   if (!Array.isArray(items) || items.length === 0) {
