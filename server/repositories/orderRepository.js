@@ -145,3 +145,77 @@ export async function getOrder(orderId) {
     })),
   };
 }
+
+export async function getOrdersByCustomer(customerUserId, limit = 5) {
+  const customerId = Number(customerUserId);
+
+  if (!Number.isFinite(customerId)) {
+    return [];
+  }
+
+  const [orderRows] = await pool.query(
+    `SELECT *
+     FROM orders
+     WHERE customer_user_id = ?
+     ORDER BY created_at DESC, order_id DESC
+     LIMIT ?`,
+    [customerId, Math.max(1, Math.trunc(limit))]
+  );
+
+  if (orderRows.length === 0) {
+    return [];
+  }
+
+  const orderIds = orderRows.map(order => order.order_id);
+
+  const [itemRows] = await pool.query(
+    `SELECT
+       oi.*,
+       mi.name AS menu_item_name,
+       mi.description AS menu_item_description,
+       mi.image AS menu_item_image
+     FROM order_items oi
+     LEFT JOIN menu_items mi ON mi.menu_item_id = oi.menu_item_id
+     WHERE oi.order_id IN (?)
+     ORDER BY oi.order_id DESC, oi.order_item_id ASC`,
+    [orderIds]
+  );
+
+  const itemsByOrderId = new Map();
+
+  for (const item of itemRows) {
+    const orderId = item.order_id;
+
+    if (!itemsByOrderId.has(orderId)) {
+      itemsByOrderId.set(orderId, []);
+    }
+
+    itemsByOrderId.get(orderId).push({
+      id: item.order_item_id,
+      menuItemId: item.menu_item_id,
+      name: item.menu_item_name || `Item ${item.menu_item_id}`,
+      description: item.menu_item_description || '',
+      image: item.menu_item_image || '',
+      quantity: item.quantity,
+      originalUnitPrice: Number(item.original_unit_price),
+      discountPercent: Number(item.discount_percent),
+      discountAmount: Number(item.discount_amount),
+      discountedUnitPrice: Number(item.discounted_unit_price),
+      lineTotal: Number(item.line_total),
+      notes: item.notes,
+    });
+  }
+
+  return orderRows.map(orderRow => ({
+    id: orderRow.order_id,
+    customerId: orderRow.customer_user_id,
+    locationId: orderRow.location_id,
+    status: orderRow.status,
+    subtotalAmount: Number(orderRow.subtotal_amount),
+    discountPercent: Number(orderRow.discount_percent),
+    discountAmount: Number(orderRow.discount_amount),
+    totalAmount: Number(orderRow.total_amount),
+    createdAt: orderRow.created_at,
+    items: itemsByOrderId.get(orderRow.order_id) || [],
+  }));
+}

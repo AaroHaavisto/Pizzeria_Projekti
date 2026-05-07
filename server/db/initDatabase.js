@@ -123,6 +123,18 @@ export async function initDatabase() {
     await pool.query(`ALTER TABLE opening_hours ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
   }
 
+  if (!hasColumn(openingHoursColumns, 'location_id')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN location_id INT NOT NULL DEFAULT 1`);
+  }
+
+  if (!hasColumn(openingHoursColumns, 'opens_at')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN opens_at TIME DEFAULT '06:00:00'`);
+  }
+
+  if (!hasColumn(openingHoursColumns, 'closes_at')) {
+    await pool.query(`ALTER TABLE opening_hours ADD COLUMN closes_at TIME DEFAULT '18:00:00'`);
+  }
+
 const [openingHoursRows] = await pool.query(
   `SELECT * FROM opening_hours LIMIT 1`
 );
@@ -136,8 +148,11 @@ if (openingHoursRows.length === 0) {
       weekdays_hours,
       weekends_label,
       weekends_hours,
-      lunch_note
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      lunch_note,
+      location_id,
+      opens_at,
+      closes_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       DEFAULT_OPENING_HOURS.label,
       DEFAULT_OPENING_HOURS.title,
@@ -146,6 +161,9 @@ if (openingHoursRows.length === 0) {
       DEFAULT_OPENING_HOURS.weekendsLabel,
       DEFAULT_OPENING_HOURS.weekendsHours,
       DEFAULT_OPENING_HOURS.lunchNote,
+      1,
+      '06:00:00',
+      '18:00:00',
     ]
   );
 }
@@ -305,7 +323,11 @@ if (openingHoursRows.length === 0) {
     await pool.query(`ALTER TABLE order_items ADD COLUMN line_total DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discounted_unit_price`);
   }
 
+  const menuItemsColumns = await getTableColumns(pool, 'menu_items');
 
+  if (!hasColumn(menuItemsColumns, 'featured')) {
+    await pool.query(`ALTER TABLE menu_items ADD COLUMN featured TINYINT(1) NOT NULL DEFAULT 0`);
+  }
 
   await pool.query(
     `UPDATE menu_items SET featured = 1 WHERE menu_item_id IN (1, 2, 3, 4)`

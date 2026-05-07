@@ -62,6 +62,7 @@ function formatCartItem(menuItem) {
     price: menuItem.price,
     priceCents: Number.isFinite(Number(menuItem.priceCents)) ? Number(menuItem.priceCents) : 0,
     quantity: 1,
+    zeroedAt: null,
   };
 }
 
@@ -84,31 +85,14 @@ function sumCartTotals(items) {
   );
 }
 
-function sortCartItems(items) {
-  return items
-    .map((item, index) => ({item, index}))
-    .sort((left, right) => {
-      const leftActive = left.item.quantity > 0 ? 0 : 1;
-      const rightActive = right.item.quantity > 0 ? 0 : 1;
-
-      if (leftActive !== rightActive) {
-        return leftActive - rightActive;
-      }
-
-      return left.index - right.index;
-    })
-    .map(entry => entry.item);
-}
-
 export function CartProvider({children}) {
   const [items, setItems] = useState(() => getInitialCartItems());
 
   function persist(nextItems) {
-    const orderedItems = sortCartItems(nextItems);
-    setItems(orderedItems);
+    setItems(nextItems);
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(orderedItems));
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextItems));
     }
   }
 
@@ -125,10 +109,16 @@ export function CartProvider({children}) {
         const existing = items.find(item => item.id === cartItem.id);
 
         if (existing) {
+          const nextQuantity = Math.min(100, Math.max(0, existing.quantity) + 1);
+
           persist(
             items.map(item =>
               item.id === cartItem.id
-                ? {...item, quantity: Math.max(0, item.quantity) + 1}
+                ? {
+                    ...item,
+                    quantity: nextQuantity,
+                    zeroedAt: nextQuantity > 0 ? null : item.zeroedAt ?? Date.now(),
+                  }
                 : item
             )
           );
@@ -138,10 +128,23 @@ export function CartProvider({children}) {
         persist([...items, cartItem]);
       },
       updateQuantity(itemId, quantity) {
+        const resolvedQuantity = Math.trunc(Number(quantity));
+
+        if (!Number.isFinite(resolvedQuantity) || resolvedQuantity < 0) {
+          persist(items.filter(item => item.id !== itemId));
+          return;
+        }
+
+        const nextQuantity = Math.min(100, resolvedQuantity);
+
         persist(
           items.map(item =>
             item.id === itemId
-              ? {...item, quantity: Math.max(0, Math.trunc(quantity))}
+              ? {
+                  ...item,
+                  quantity: nextQuantity,
+                  zeroedAt: nextQuantity === 0 ? item.zeroedAt ?? Date.now() : null,
+                }
               : item
           )
         );

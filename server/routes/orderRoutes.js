@@ -2,6 +2,7 @@ import express from 'express';
 import {
   addOrderItem,
   createOrder,
+  getOrdersByCustomer,
   getLunchOffer,
   getOrder,
 } from '../db.js';
@@ -115,6 +116,16 @@ router.post('/', async (req, res) => {
       message: 'Order created successfully',
       order,
     });
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+router.get('/customer/:customerId', async (req, res) => {
+  try {
+    const orders = await getOrdersByCustomer(req.params.customerId, 10);
+
+    res.json({orders});
   } catch (err) {
     sendError(res, err);
   }

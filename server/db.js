@@ -32,4 +32,5 @@ export {
   createOrder,
   addOrderItem,
   getOrder,
+  getOrdersByCustomer,
 } from './repositories/orderRepository.js';

@@ -135,7 +135,7 @@ a {
 
 .topbar__links > a:hover,
 .topbar__trigger:hover,
-.topbar__group:focus-within .topbar__trigger {
+.topbar__group:hover .topbar__trigger {
   background: rgba(255, 241, 225, 0.94);
   box-shadow: 0 0 0 2px rgba(255, 190, 128, 0.32);
   color: #4f2d1f;
@@ -156,7 +156,6 @@ a {
 }
 
 .topbar__group:hover::after,
-.topbar__group:focus-within::after,
 .topbar__group--open::after {
   pointer-events: auto;
 }
@@ -184,7 +183,6 @@ a {
 }
 
 .topbar__group:hover .topbar__dropdown,
-.topbar__group:focus-within .topbar__dropdown,
 .topbar__group--open .topbar__dropdown {
   opacity: 1;
   transform: translateY(0);
@@ -447,16 +445,20 @@ h1 {
 
 /* Offer banner */
 .offer-banner {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: 14px;
   max-width: 100%;
   margin: 8px auto 0;
   background: linear-gradient(90deg, #fff7f5, #fffaf8);
   border: 1px solid rgba(206,141,103,0.2);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .offer-banner--active {
@@ -464,7 +466,49 @@ h1 {
   border: 2px solid #b84b3a;
 }
 
+.offer-banner:hover {
+  transform: scale(1.015);
+  box-shadow: 0 14px 28px rgba(176, 83, 35, 0.12);
+}
+
+.offer-banner__glow {
+  position: absolute;
+  inset: -28px;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.84), transparent 46%),
+    conic-gradient(
+      from 0deg,
+      rgba(255, 88, 88, 0.32),
+      rgba(255, 184, 92, 0.32),
+      rgba(123, 213, 93, 0.32),
+      rgba(87, 187, 255, 0.32),
+      rgba(182, 116, 255, 0.32),
+      rgba(255, 88, 88, 0.32)
+    );
+  opacity: 0;
+  filter: blur(8px);
+  animation: offer-banner-spin 6s linear infinite;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.offer-banner:hover .offer-banner__glow {
+  opacity: 1;
+}
+
+@keyframes offer-banner-spin {
+  from {
+    transform: rotate(0deg) scale(0.88);
+  }
+
+  to {
+    transform: rotate(360deg) scale(0.88);
+  }
+}
+
 .offer-banner__label {
+  position: relative;
+  z-index: 1;
   font-weight: 900;
   color: #000;
   background: #fff;
@@ -473,6 +517,8 @@ h1 {
 }
 
 .offer-banner__body {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -489,6 +535,24 @@ h1 {
 }
 
 .offer-banner__time {font-size: 0.95rem; color: #6b493a}
+
+.offer-banner__close {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #7a4128;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.offer-banner__close:hover {
+  background: #fff;
+}
 
 .menu-card,
 .info-card,
@@ -515,6 +579,12 @@ h1 {
   transition:
     outline-color 220ms ease,
     background-color 220ms ease;
+}
+
+.section--focus .pizza-card__image-button img,
+.pizza-card--highlighted .pizza-card__image-button img {
+  transform: translateY(-3px) scale(1.03);
+  filter: saturate(1.08) contrast(1.04);
 }
 
 .section--feature {
@@ -1155,7 +1225,6 @@ h1 {
   }
 
   .topbar__group:hover .topbar__dropdown,
-  .topbar__group:focus-within .topbar__dropdown,
   .topbar__group--open .topbar__dropdown {
     display: grid;
   }

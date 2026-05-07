@@ -13,11 +13,12 @@ function Navigation() {
   const {customer, logoutCustomer} = useCustomerSession();
   const {itemCount} = useCart();
   const {language, changeLanguage} = useLanguage();
+  const isEnglish = language === 'en';
 
   const isAdmin = isAdminCustomer(customer);
 
   return (
-    <nav className="topbar" aria-label="Päävalikko">
+    <nav className="topbar" aria-label={isEnglish ? 'Main navigation' : 'Päävalikko'}>
       <Link className="brand" to="/">
         Pizzeria Pro
       </Link>
@@ -25,20 +26,20 @@ function Navigation() {
       <div className="topbar__links">
         <div className="topbar__group">
           <Link to="/" className="topbar__trigger">
-            Etusivu
+            {isEnglish ? 'Home' : 'Etusivu'}
           </Link>
 
-          <div className="topbar__dropdown" role="menu" aria-label="Etusivu">
-            <Link to="/">Yleiskatsaus</Link>
-            <Link to="/#tarjoukset">Tarjoukset</Link>
+          <div className="topbar__dropdown" role="menu" aria-label={isEnglish ? 'Home' : 'Etusivu'}>
+            <Link to="/">{isEnglish ? 'Overview' : 'Yleiskatsaus'}</Link>
+            <Link to="/menu?focus=all#menu-pizzat">{isEnglish ? 'Menu' : 'Menu'}</Link>
           </div>
         </div>
 
         <Link to="/menu">Menu</Link>
-        <Link to="/location">Sijainti</Link>
+        <Link to="/location">{isEnglish ? 'Location' : 'Sijainti'}</Link>
 
         <Link to="/cart">
-          Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
+          {isEnglish ? 'Cart' : 'Ostoskori'} {itemCount > 0 ? `(${itemCount})` : ''}
         </Link>
 
         {isAdmin ? <Link to="/admin">Admin</Link> : null}
@@ -48,17 +49,25 @@ function Navigation() {
             className="topbar__trigger topbar__button"
             to={customer ? '/account' : '/account?mode=login#kirjautuminen'}
           >
-            Käyttäjä
+            {isEnglish ? 'Account' : 'Käyttäjä'}
           </Link>
 
-          <div className="topbar__dropdown" role="menu" aria-label="Käyttäjä">
+          <div className="topbar__dropdown" role="menu" aria-label={isEnglish ? 'Account' : 'Käyttäjä'}>
             {customer ? (
               <>
-                <p className="topbar__userline">Kirjautunut: {customer.name}</p>
+                <p className="topbar__userline">{isEnglish ? 'Signed in:' : 'Kirjautunut:'} {customer.name}</p>
                 <p className="topbar__userline">{customer.email}</p>
 
                 <Link className="topbar__dropdown-link" to="/account">
-                  Tilitiedot
+                  {isEnglish ? 'Account details' : 'Tilitiedot'}
+                </Link>
+
+                <Link className="topbar__dropdown-link" to="/account#tilaukset">
+                  {isEnglish ? 'Orders' : 'Tilaukset'}
+                </Link>
+
+                <Link className="topbar__dropdown-link" to="/feedback">
+                  {isEnglish ? 'Give feedback' : 'Anna palautetta'}
                 </Link>
 
                 {isAdmin ? (
@@ -72,14 +81,14 @@ function Navigation() {
                   type="button"
                   onClick={logoutCustomer}
                 >
-                  Kirjaudu ulos
+                  {isEnglish ? 'Log out' : 'Kirjaudu ulos'}
                 </button>
               </>
             ) : (
               <>
-                <Link to="/account?mode=login#kirjautuminen">Kirjaudu</Link>
+                <Link to="/account?mode=login#kirjautuminen">{isEnglish ? 'Log in' : 'Kirjaudu'}</Link>
                 <Link to="/account?mode=register#kirjautuminen">
-                  Rekisteröidy
+                  {isEnglish ? 'Register' : 'Rekisteröidy'}
                 </Link>
               </>
             )}
@@ -94,7 +103,7 @@ function Navigation() {
             {language.toUpperCase()}
           </button>
 
-          <div className="topbar__dropdown" role="menu" aria-label="Kieli">
+          <div className="topbar__dropdown" role="menu" aria-label={isEnglish ? 'Language' : 'Kieli'}>
             <button
               className={`topbar__button topbar__dropdown-button ${
                 language === 'fi' ? 'topbar__lang-active' : ''

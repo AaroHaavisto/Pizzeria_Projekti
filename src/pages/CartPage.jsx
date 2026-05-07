@@ -1,9 +1,10 @@
-import {useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import OrderSuccessModal from '../components/OrderSuccessModal';
 import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {useLanguage} from '../contexts/LanguageContext';
 import {useOffer} from '../contexts/OfferContext';
 import {submitOrder} from '../api/orderApi';
 import '../css/cart_style.css';
@@ -18,6 +19,8 @@ function formatEuros(priceCents) {
 
 function CartPage() {
   const {customer} = useCustomerSession();
+  const {language} = useLanguage();
+  const isEnglish = language === 'en';
   const {offer} = useOffer();
   const {
     items,
@@ -27,22 +30,14 @@ function CartPage() {
     removeFromCart,
     clearCart,
   } = useCart();
-  
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [hoveredItems, setHoveredItems] = useState({});
+  const [settledZeroItems, setSettledZeroItems] = useState({});
+  const zeroTimersRef = useRef(new Map());
   const activeItems = items.filter(item => item.quantity > 0);
-  const sortedItems = [...items].sort((left, right) => {
-    const leftActive = left.quantity > 0 ? 0 : 1;
-    const rightActive = right.quantity > 0 ? 0 : 1;
-
-    if (leftActive !== rightActive) {
-      return leftActive - rightActive;
-    }
-
-    return 0;
-  });
   const offerActive = isLunchOfferActive(new Date(), offer);
   const normalTotalCents = activeItems.reduce((sum, it) => sum + (Number(it.priceCents) || 0) * it.quantity, 0);
   const discountedTotalCents = activeItems.reduce(
@@ -50,13 +45,97 @@ function CartPage() {
     0
   );
 
+  const displayItems = useMemo(() => {
+    return items
+      .map((item, index) => {
+        const isSettled = item.quantity === 0 && settledZeroItems[item.id] && !hoveredItems[item.id];
+
+        return {
+          ...item,
+          order: item.quantity > 0 || !isSettled ? index : index + 1000,
+          isSettled,
+        };
+      })
+      .sort((left, right) => left.order - right.order);
+  }, [hoveredItems, items, settledZeroItems]);
+
+  useEffect(() => {
+    const timers = zeroTimersRef.current;
+
+    for (const [itemId, timerId] of timers.entries()) {
+      const currentItem = items.find(entry => entry.id === itemId);
+      const isHovered = Boolean(hoveredItems[itemId]);
+
+      if (!currentItem || currentItem.quantity > 0 || isHovered) {
+        window.clearTimeout(timerId);
+        timers.delete(itemId);
+      }
+    }
+
+    for (const item of items) {
+      const isZero = item.quantity === 0;
+      const isHovered = Boolean(hoveredItems[item.id]);
+
+      if (!isZero) {
+        if (settledZeroItems[item.id]) {
+          setSettledZeroItems(current => {
+            const next = {...current};
+            delete next[item.id];
+            return next;
+          });
+        }
+
+        continue;
+      }
+
+      if (isHovered || settledZeroItems[item.id] || timers.has(item.id)) {
+        continue;
+      }
+
+      const timeoutId = window.setTimeout(() => {
+        setSettledZeroItems(current => ({...current, [item.id]: true}));
+        timers.delete(item.id);
+      }, 3000);
+
+      timers.set(item.id, timeoutId);
+    }
+  }, [hoveredItems, items, settledZeroItems]);
+
+  function handleItemHover(itemId, isHovered) {
+    setHoveredItems(current => ({
+      ...current,
+      [itemId]: isHovered,
+    }));
+
+    if (!isHovered) {
+      return;
+    }
+
+    const timerId = zeroTimersRef.current.get(itemId);
+
+    if (timerId) {
+      window.clearTimeout(timerId);
+      zeroTimersRef.current.delete(itemId);
+    }
+
+    setSettledZeroItems(current => {
+      if (!current[itemId]) {
+        return current;
+      }
+
+      const next = {...current};
+      delete next[itemId];
+      return next;
+    });
+  }
+
   async function handleSubmitOrder() {
     try {
       setIsSubmitting(true);
       setErrorMessage('');
 
       if (activeItems.length === 0) {
-        setErrorMessage('Kori on tyhjä. Lisää tuotteita ennen tilausta.');
+        setErrorMessage(isEnglish ? 'The cart is empty. Add items before ordering.' : 'Kori on tyhjä. Lisää tuotteita ennen tilausta.');
         setIsSubmitting(false);
         return;
       }
@@ -79,7 +158,7 @@ function CartPage() {
       clearCart();
     } catch (error) {
       setErrorMessage(
-        error.message || 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.'
+        error.message || (isEnglish ? 'Submitting the order failed. Try again.' : 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.')
       );
     } finally {
       setIsSubmitting(false);
@@ -92,26 +171,27 @@ function CartPage() {
         <Navigation />
 
         <section className="hero__content cart-hero">
-          <p className="eyebrow">Ostoskori</p>
-          <h1>Tarkista tilaus ennen noutoa.</h1>
+          <p className="eyebrow">{isEnglish ? 'Cart' : 'Ostoskori'}</p>
+          <h1>{isEnglish ? 'Check your order before pickup.' : 'Tarkista tilaus ennen noutoa.'}</h1>
           <p className="hero__text cart-hero__text">
-            Näet tuotteet, määrät ja kokonaissumman heti. Muokkaa tilausta
-            nopeasti ilman turhaa selailua.
+            {isEnglish
+              ? 'See items, quantities, and the total instantly. Edit the order quickly without extra browsing.'
+              : 'Näet tuotteet, määrät ja kokonaissumman heti. Muokkaa tilausta nopeasti ilman turhaa selailua.'}
           </p>
           <div className="hero__actions">
             <Link className="button button--primary" to="/menu">
-              Lisää tuotteita
+              {isEnglish ? 'Add more items' : 'Lisää tuotteita'}
             </Link>
             <Link className="button button--secondary" to="/account">
-              {customer ? 'Oma tili' : 'Kirjaudu'}
+              {customer ? (isEnglish ? 'My account' : 'Oma tili') : (isEnglish ? 'Log in' : 'Kirjaudu')}
             </Link>
           </div>
           <div className="hero__subactions">
             <Link className="chip-link" to="/account">
-              {customer ? 'Tilitiedot' : 'Kirjaudu sisään'}
+              {customer ? (isEnglish ? 'Account details' : 'Tilitiedot') : (isEnglish ? 'Log in' : 'Kirjaudu sisään')}
             </Link>
             <Link className="chip-link" to="/">
-              Etusivulle
+              {isEnglish ? 'Home' : 'Etusivulle'}
             </Link>
           </div>
         </section>
@@ -120,16 +200,19 @@ function CartPage() {
       <main className="cart-layout">
         <section className="cart-panel">
           <div className="section__heading">
-            <p className="section__label">Korissa</p>
-            <h2>{itemCount} tuotetta valmiina</h2>
+            <p className="section__label">{isEnglish ? 'In cart' : 'Korissa'}</p>
+            <h2>{itemCount} {isEnglish ? 'items ready' : 'tuotetta valmiina'}</h2>
           </div>
 
-          {sortedItems.length > 0 ? (
+          {displayItems.length > 0 ? (
             <div className="cart-list">
-              {sortedItems.map(item => (
+              {displayItems.map(item => (
                 <article
-                  className={`cart-item${item.quantity === 0 ? ' cart-item--inactive' : ''}`}
+                  className={`cart-item${item.quantity === 0 ? ' cart-item--inactive' : ''}${item.isSettled ? ' cart-item--settled' : ''}`}
                   key={item.id}
+                  onMouseEnter={() => handleItemHover(item.id, true)}
+                  onMouseLeave={() => handleItemHover(item.id, false)}
+                  style={{order: item.order}}
                 >
                   <img src={item.image} alt={item.name} />
                   <div className="cart-item__content">
@@ -140,7 +223,7 @@ function CartPage() {
                         className="cart-item__remove"
                         onClick={() => removeFromCart(item.id)}
                       >
-                        Poista
+                        {isEnglish ? 'Remove' : 'Poista'}
                       </button>
                     </div>
                     <p>{item.description}</p>
@@ -180,10 +263,11 @@ function CartPage() {
                       >
                         +
                       </button>
-                      <strong>
-                        {offerActive
+                      <strong className="cart-item__price-line">
+                        <span>{isEnglish ? 'Unit' : 'Kpl'} {formatEuros(item.priceCents)}</span>
+                        <span>{isEnglish ? 'Line' : 'Rivi'} {offerActive
                           ? formatEuros(applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer) * item.quantity)
-                          : formatEuros(item.priceCents * item.quantity)}
+                          : formatEuros(Number(item.priceCents) * item.quantity)}</span>
                       </strong>
                     </div>
                   </div>
@@ -192,23 +276,23 @@ function CartPage() {
             </div>
           ) : (
             <div className="empty-state">
-              <h3>Kori on tyhjä.</h3>
-              <p>Lisää pizzaa menusta, niin näet ostoskorin toiminnassa.</p>
+              <h3>{isEnglish ? 'The cart is empty.' : 'Kori on tyhjä.'}</h3>
+              <p>{isEnglish ? 'Add a pizza from the menu to see the cart in action.' : 'Lisää pizzaa menusta, niin näet ostoskorin toiminnassa.'}</p>
             </div>
           )}
         </section>
 
         <aside className="cart-summary">
-          <p className="section__label">Yhteenveto</p>
+          <p className="section__label">{isEnglish ? 'Summary' : 'Yhteenveto'}</p>
           {offerActive ? (
             <>
               <h2 className="cart-summary__discount">{formatEuro(discountedTotalCents)}</h2>
-              <p className="cart-summary__normal">Norm. {formatEuro(normalTotalCents)}</p>
+              <p className="cart-summary__normal">{isEnglish ? 'Reg.' : 'Norm.'} {formatEuro(normalTotalCents)}</p>
             </>
           ) : (
             <>
               <h2>{formatEuro(normalTotalCents)}</h2>
-              <p>Valmis tilaus näkyy tässä koko ajan.</p>
+              <p>{isEnglish ? 'Your finished order will stay visible here.' : 'Valmis tilaus näkyy tässä koko ajan.'}</p>
             </>
           )}
 
@@ -225,10 +309,10 @@ function CartPage() {
               onClick={handleSubmitOrder}
               disabled={activeItems.length === 0 || isSubmitting}
             >
-              {isSubmitting ? 'Lähetetään...' : 'Tilaa nyt'}
+              {isSubmitting ? (isEnglish ? 'Sending...' : 'Lähetetään...') : (isEnglish ? 'Order now' : 'Tilaa nyt')}
             </button>
             <Link className="button button--secondary" to="/menu">
-              Jatka tilausta
+              {isEnglish ? 'Continue ordering' : 'Jatka tilausta'}
             </Link>
           </div>
 
@@ -238,7 +322,7 @@ function CartPage() {
             onClick={clearCart}
             disabled={items.length === 0}
           >
-            Tyhjennä kori
+            {isEnglish ? 'Empty cart' : 'Tyhjennä kori'}
           </button>
         </aside>
 

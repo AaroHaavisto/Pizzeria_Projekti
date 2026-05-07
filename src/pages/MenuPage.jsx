@@ -1,5 +1,5 @@
-import {useEffect, useState} from 'react';
-import {Link} from 'react-router-dom';
+import {useEffect, useMemo, useState} from 'react';
+import {Link, useLocation} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import PizzaCard from '../components/PizzaCard';
 import {
@@ -7,6 +7,7 @@ import {
   getWeeklyMenuSections,
 } from '../api/menuApi';
 import {useCart} from '../contexts/CartContext';
+import {useLanguage} from '../contexts/LanguageContext';
 import '../css/menu_style.css';
 
 function flattenMenuItems(menuData) {
@@ -25,11 +26,16 @@ function flattenMenuItems(menuData) {
 
 function MenuPage() {
   const {addToCart, items, updateQuantity, itemCount, totalCents} = useCart();
+  const {language} = useLanguage();
+  const isEnglish = language === 'en';
+  const location = useLocation();
 
   const [sections, setSections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [menuFilter, setMenuFilter] = useState('all');
+  const [highlightedPizzaId, setHighlightedPizzaId] = useState('');
+  const [highlightAllPizzas, setHighlightAllPizzas] = useState(false);
 
   async function loadMenuData() {
     const [nextSections, nextMenuData] = await Promise.all([
@@ -50,7 +56,7 @@ function MenuPage() {
         await loadMenuData();
       } catch {
         if (mounted) {
-          setLoadError('Menun lataaminen epäonnistui.');
+          setLoadError(isEnglish ? 'Failed to load the menu.' : 'Menun lataaminen epäonnistui.');
         }
       } finally {
         if (mounted) {
@@ -80,6 +86,11 @@ function MenuPage() {
     return true;
   });
 
+  const selectedFocus = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('focus') || location.hash.replace('#pizza-', '');
+  }, [location.hash, location.search]);
+
   const cartQuantityById = items.reduce((accumulator, item) => {
     accumulator[item.id] = item.quantity;
     return accumulator;
@@ -89,14 +100,44 @@ function MenuPage() {
 
   const filterHeading =
     menuFilter === 'veg'
-      ? 'Vege pizzat'
+      ? (isEnglish ? 'Vegetarian pizzas' : 'Vege pizzat')
       : menuFilter === 'meat'
-        ? 'Lihapizzat'
-        : 'Kaikki pizzat';
+        ? (isEnglish ? 'Meat pizzas' : 'Lihapizzat')
+        : (isEnglish ? 'All pizzas' : 'Kaikki pizzat');
 
   function handleQuantityChange(pizza, nextQuantity) {
     updateQuantity(pizza.id, nextQuantity);
   }
+
+  useEffect(() => {
+    const nextFocus = selectedFocus || '';
+    const isFocusAll = nextFocus === 'all';
+
+    setHighlightedPizzaId(isFocusAll ? '' : nextFocus);
+    setHighlightAllPizzas(isFocusAll);
+
+    const target = isFocusAll
+      ? document.getElementById('menu-pizzat')
+      : nextFocus
+        ? document.getElementById(`pizza-${nextFocus}`)
+        : null;
+
+    if (!target) {
+      return undefined;
+    }
+
+    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    target.classList.add('section--focus');
+
+    const timeoutId = window.setTimeout(() => {
+      target.classList.remove('section--focus');
+    }, 1600);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      target.classList.remove('section--focus');
+    };
+  }, [selectedFocus]);
 
   return (
     <div className="menu-page">
@@ -104,48 +145,48 @@ function MenuPage() {
         <Navigation />
 
         <section className="hero__content">
-          <p className="eyebrow">Koko valikoima</p>
-          <h1 id="menu">Löydä suosikkipizza jokaiseen nälkätasoon.</h1>
+          <p className="eyebrow">{isEnglish ? 'Full selection' : 'Koko valikoima'}</p>
+          <h1 id="menu">{isEnglish ? 'Find a favorite pizza for every hunger level.' : 'Löydä suosikkipizza jokaiseen nälkätasoon.'}</h1>
           <p className="hero__text menu-hero-text">
-            Suodata pizzat aineiden mukaan.
+            {isEnglish ? 'Filter pizzas by ingredients.' : 'Suodata pizzat aineiden mukaan.'}
           </p>
 
           <div className="hero__actions">
             <Link className="button button--secondary" to="/cart">
-              Ostoskori {itemCount > 0 ? `(${itemCount})` : ''}
+              {isEnglish ? 'Cart' : 'Ostoskori'} {itemCount > 0 ? `(${itemCount})` : ''}
             </Link>
           </div>
 
           <div className="hero__subactions">
             <Link className="chip-link" to="/">
-              Etusivu
+              {isEnglish ? 'Home' : 'Etusivu'}
             </Link>
             <Link className="chip-link" to="/location">
-              Kartta
+              {isEnglish ? 'Map' : 'Kartta'}
             </Link>
           </div>
         </section>
       </header>
 
       <main className="pizza-showcase" aria-label="Pizzeria Pro menu listaus">
-        {isLoading ? <p>Ladataan menua...</p> : null}
+        {isLoading ? <p>{isEnglish ? 'Loading menu...' : 'Ladataan menua...'}</p> : null}
         {loadError ? <p>{loadError}</p> : null}
 
         <section className="menu-summary-card">
-          <p className="section__label">Tilaus</p>
-          <h2>Helppo nouto ja selkeä hinnoittelu</h2>
+          <p className="section__label">{isEnglish ? 'Order' : 'Tilaus'}</p>
+          <h2>{isEnglish ? 'Easy pickup and clear pricing' : 'Helppo nouto ja selkeä hinnoittelu'}</h2>
 
           <div className="menu-summary-card__stats">
-            <span>{allMenuItems.length} pizzaa listalla</span>
-            <span>{itemCount} tuotetta korissa</span>
+            <span>{allMenuItems.length} {isEnglish ? 'pizzas on the list' : 'pizzaa listalla'}</span>
+            <span>{itemCount} {isEnglish ? 'items in the cart' : 'tuotetta korissa'}</span>
             <span>
-              {(totalCents / 100).toFixed(2).replace('.', ',')} € yhteensä
+              {(totalCents / 100).toFixed(2).replace('.', ',')} € {isEnglish ? 'total' : 'yhteensä'}
             </span>
           </div>
 
           {items.length > 0 ? (
             <div className="menu-summary-card__cart-preview">
-              <p className="section__label">Omat ostokset</p>
+              <p className="section__label">{isEnglish ? 'My purchases' : 'Omat ostokset'}</p>
               <ul>
                 {previewCartItems.map(item => (
                   <li key={item.id}>
@@ -169,7 +210,7 @@ function MenuPage() {
                     type="button"
                     onClick={() => setMenuFilter('veg')}
                   >
-                    Vege
+                    {isEnglish ? 'Veg' : 'Vege'}
                   </button>
 
                   <button
@@ -179,7 +220,7 @@ function MenuPage() {
                     type="button"
                     onClick={() => setMenuFilter('meat')}
                   >
-                    Liha
+                    {isEnglish ? 'Meat' : 'Liha'}
                   </button>
 
                   <button
@@ -189,7 +230,7 @@ function MenuPage() {
                     type="button"
                     onClick={() => setMenuFilter('all')}
                   >
-                    Kaikki
+                    {isEnglish ? 'All' : 'Kaikki'}
                   </button>
                 </div>
 
@@ -207,12 +248,13 @@ function MenuPage() {
                   cartQuantity={cartQuantityById[pizza.id] || 0}
                   onQuantityChange={handleQuantityChange}
                   anchorId={`pizza-${pizza.id}`}
+                  highlighted={highlightAllPizzas || highlightedPizzaId === String(pizza.id)}
                 />
               ))}
             </div>
 
             {visibleMenuItems.length === 0 ? (
-              <p>Pizzoja ei löytynyt valitulla suodatuksella.</p>
+              <p>{isEnglish ? 'No pizzas matched the selected filter.' : 'Pizzoja ei löytynyt valitulla suodatuksella.'}</p>
             ) : null}
           </section>
         </div>
