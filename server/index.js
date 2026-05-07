@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
+import path from 'node:path';
 
+import {fileURLToPath} from 'node:url';
 import {initDatabase, pingDatabase} from './db.js';
 import {errorHandler} from './middleware/errorHandler.js';
 
@@ -13,6 +15,8 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const PORT = process.env.API_PORT || 3001;
 
 app.use(cors());
@@ -38,6 +42,15 @@ app.get('/api/health', async (_req, res, next) => {
     next(err);
   }
 });
+if (process.env.NODE_ENV === 'production') {
+  const clientDistPath = path.join(__dirname, '../dist');
+
+  app.use(express.static(clientDistPath));
+
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 app.use('/api/customers', customerRoutes);
 app.use('/api/menu', menuRoutes);
@@ -45,6 +58,16 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/ratings', ratingRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api', settingsRoutes);
+
+if (process.env.NODE_ENV === 'production') {
+  const clientDistPath = path.join(__dirname, '../dist');
+
+  app.use(express.static(clientDistPath));
+
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 app.use(errorHandler);
 
