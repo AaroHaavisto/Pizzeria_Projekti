@@ -1,6 +1,6 @@
 import {getAdminRequestHeaders} from '../utils/adminAuth';
 
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function fetchRatings() {
   const response = await fetch(`${API_BASE}/api/ratings`);
