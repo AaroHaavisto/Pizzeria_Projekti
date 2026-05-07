@@ -268,7 +268,7 @@ function CartPage() {
                       <strong className="cart-item__price-line">
                         <span>{isEnglish ? 'Unit' : 'Kpl'} {formatEuros(item.priceCents)}</span>
                         <span className="cart-item__line-total">
-                          {isEnglish ? 'Yht' : 'Yht'} {offerActive
+                          {isEnglish ? 'Total' : 'Yht'} {offerActive
                             ? formatEuros(applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer) * item.quantity)
                             : formatEuros(Number(item.priceCents) * item.quantity)}
                         </span>
@@ -324,7 +324,7 @@ function CartPage() {
             >
               {isSubmitting ? (isEnglish ? 'Sending...' : 'Lähetetään...') : (isEnglish ? 'Order now' : 'Tilaa nyt')}
             </button>
-            <Link className="button button--secondary" to="/menu">
+            <Link className="button button--secondary" to="/menu?focus=all#menu-pizzat">
               {isEnglish ? 'Continue ordering' : 'Jatka tilausta'}
             </Link>
           </div>

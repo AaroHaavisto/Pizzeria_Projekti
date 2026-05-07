@@ -451,9 +451,10 @@ h1 {
   justify-content: center;
   gap: 12px;
   padding: 8px 14px;
-  border-radius: 14px;
-  max-width: 100%;
-  margin: 8px auto 0;
+  border-radius: 0;
+  width: 100%;
+  max-width: none;
+  margin: 8px 0 0;
   background: linear-gradient(90deg, #fff7f5, #fffaf8);
   border: 1px solid rgba(206,141,103,0.2);
   overflow: hidden;
@@ -473,27 +474,31 @@ h1 {
 
 .offer-banner__glow {
   position: absolute;
-  inset: -28px;
-  background:
-    radial-gradient(circle at center, rgba(255,255,255,0.84), transparent 46%),
-    conic-gradient(
-      from 0deg,
-      rgba(255, 88, 88, 0.32),
-      rgba(255, 184, 92, 0.32),
-      rgba(123, 213, 93, 0.32),
-      rgba(87, 187, 255, 0.32),
-      rgba(182, 116, 255, 0.32),
-      rgba(255, 88, 88, 0.32)
-    );
+  left: 50%;
+  top: 50%;
+  width: 160%;
+  height: 160%;
+  transform: translate(-50%, -50%) scale(0.6);
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 88, 88, 0.6),
+    rgba(255, 184, 92, 0.6),
+    rgba(123, 213, 93, 0.6),
+    rgba(87, 187, 255, 0.6),
+    rgba(182, 116, 255, 0.6),
+    rgba(255, 88, 88, 0.6)
+  );
   opacity: 0;
-  filter: blur(8px);
+  filter: blur(18px);
   animation: offer-banner-spin 6s linear infinite;
   pointer-events: none;
-  transition: opacity 180ms ease;
+  transition: opacity 180ms ease, transform 280ms ease;
 }
 
 .offer-banner:hover .offer-banner__glow {
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 @keyframes offer-banner-spin {

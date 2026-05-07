@@ -25,7 +25,7 @@ function flattenMenuItems(menuData) {
 }
 
 function MenuPage() {
-  const {addToCart, items, updateQuantity, itemCount, totalCents, cartLimitReached, cartLimitMessage} = useCart();
+  const {addToCart, items, updateQuantity, itemCount, totalCents, cartLimitReached, cartLimitMessage, removeFromCart} = useCart();
   const {language} = useLanguage();
   const isEnglish = language === 'en';
   const location = useLocation();
@@ -193,7 +193,14 @@ function MenuPage() {
               <p className="section__label">{isEnglish ? 'My purchases' : 'Omat ostokset'}</p>
               <ul>
                 {previewCartItems.map(item => (
-                  <li key={item.id}>
+                  <li key={item.id} className="menu-preview-item">
+                    <label className="menu-preview-item__remove">
+                      <input
+                        type="checkbox"
+                        aria-label={isEnglish ? `Remove ${item.name} from cart` : `Poista ${item.name} korista`}
+                        onChange={() => removeFromCart(item.id)}
+                      />
+                    </label>
                     {item.name} x{item.quantity}
                   </li>
                 ))}

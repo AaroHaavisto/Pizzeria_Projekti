@@ -284,12 +284,7 @@ function MainPage() {
                       <span className="menu-card__price-normal">{formatEuro(priceCents)}</span>
                     )}
                   </div>
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    draggable={false}
-                    onDragStart={event => event.preventDefault()}
-                  />
+                  {/* Removed homepage pizza images to simplify layout */}
                 </Link>
               );
             })}
