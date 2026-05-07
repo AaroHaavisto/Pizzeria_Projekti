@@ -234,9 +234,38 @@
 
 .pizza-card__controls {
   display: grid;
-  grid-template-columns: 36px minmax(62px, 88px) 36px;
+  grid-template-columns: minmax(0, 1fr) 36px minmax(62px, 88px) 36px;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.pizza-card__line-total {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pizza-card__save,
+.pizza-card__total {
+  font-size: 0.86rem;
+  line-height: 1.15;
+}
+
+.pizza-card__save {
+  color: #b80f0f;
+  font-weight: 800;
+}
+
+.pizza-card__total {
+  color: #3f2a21;
+  font-weight: 800;
 }
 
 .pizza-card__step-button {
@@ -399,6 +428,34 @@
   gap: 10px;
   justify-content: flex-end;
 }
+
+/* Animated decorative stars spawned on add-to-cart */
+.pizza-star-anim {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 40;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  clip-path: polygon(50% 0%, 61% 34%, 98% 35%, 69% 57%, 79% 91%, 50% 71%, 21% 91%, 31% 57%, 2% 35%, 39% 34%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), currentColor 55%, rgba(255,255,255,0.85));
+}
+
+@keyframes star-fly {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(calc(var(--tx) - 50%), calc(var(--ty) - 50%)) scale(0.4) rotate(var(--rot)); }
+}
+
+/* small save/total display inside pizza card */
+.pizza-card__line-total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.pizza-card__save { color: #b80f0f; font-weight: 800; font-size: 0.9rem; }
+.pizza-card__total { font-weight: 800; color: #2d1c14; }
+
 
 @media (max-width: 900px) {
   .menu-page .hero__subactions {

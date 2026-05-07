@@ -111,6 +111,16 @@
   color: #2f6a38;
 }
 
+/* Larger rating selector for feedback page */
+.rating-select {
+  width: 120px;
+  height: 96px;
+  font-size: 46px;
+  text-align: center;
+  display: block;
+  padding: 6px;
+}
+
 .account-form__submit {
   width: 100%;
 }

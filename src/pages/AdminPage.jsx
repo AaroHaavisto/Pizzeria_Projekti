@@ -2,6 +2,7 @@
 import {Link, useLocation} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
+import {useLanguage} from '../contexts/LanguageContext';
 import {useMenuData} from '../contexts/MenuDataContext';
 import {useOffer} from '../contexts/OfferContext';
 import {fetchRatings, updateRating} from '../api/ratingsApi';
@@ -24,8 +25,8 @@ const IMAGE_OPTIONS = [
 ];
 
 const MEAL_TYPE_OPTIONS = [
-  {label: 'Lounas', value: 'lunch'},
-  {label: 'A la carte', value: 'a_la_carte'},
+  {value: 'lunch'},
+  {value: 'a_la_carte'},
 ];
 
 function flattenMenuItems(menuData) {
@@ -133,6 +134,8 @@ function createRatingDrafts(ratings) {
 function AdminPage() {
   const location = useLocation();
   const {customer} = useCustomerSession();
+  const {language} = useLanguage();
+  const isEnglish = language === 'en';
   const {menuData, replaceMenuData, restoreDefaultMenu} = useMenuData();
   const {offer, saveOffer} = useOffer();
 
@@ -556,7 +559,7 @@ function AdminPage() {
                       <br />
                       <small>
                         {item.itemId} · {formatEuro(item.priceCents)} ·{' '}
-                        {item.mealType === 'lunch' ? 'Lounas' : 'A la carte'}
+                        {item.mealType === 'lunch' ? 'Lounas' : (isEnglish ? 'A la carte' : 'À la carte')}
                       </small>
                     </span>
 
@@ -981,7 +984,9 @@ function AdminPage() {
                     >
                       {MEAL_TYPE_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>
-                          {option.label}
+                          {option.value === 'lunch'
+                            ? (isEnglish ? 'Lunch' : 'Lounas')
+                            : (isEnglish ? 'A la carte' : 'À la carte')}
                         </option>
                       ))}
                     </select>

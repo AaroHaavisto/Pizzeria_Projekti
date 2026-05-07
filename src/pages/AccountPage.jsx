@@ -24,7 +24,7 @@ function AccountPage() {
     logoutCustomer,
     registerCustomer,
   } = useCustomerSession();
-  const {items: cartItems} = useCart();
+  const {items: cartItems, cartLimitReached, cartLimitMessage} = useCart();
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState(initialFormState);
   const [feedback, setFeedback] = useState({type: '', message: ''});
@@ -249,6 +249,7 @@ function AccountPage() {
                 ) : (
                   <p>{isEnglish ? 'The shopping list is empty.' : 'Ostoslista on tyhjä.'}</p>
                 )}
+                {cartLimitReached ? <p className="cart-limit" role="status">{cartLimitMessage}</p> : null}
                 <Link className="button button--secondary" to="/cart">
                   {isEnglish ? 'Edit' : 'Muokkaa'}
                 </Link>
@@ -264,7 +265,7 @@ function AccountPage() {
                 {!ordersLoading && !ordersError && orders.length > 0 ? (
                   <div className="account-orders">
                     {orders.map(order => (
-                      <article className="account-orders__item" key={order.id}>
+                      <article id={`order-${order.id}`} className="account-orders__item" key={order.id}>
                         <div className="account-orders__header">
                           <strong>#{order.id}</strong>
                           <span>{new Intl.DateTimeFormat('fi-FI', {dateStyle: 'short', timeStyle: 'short'}).format(new Date(order.createdAt))}</span>

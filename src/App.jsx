@@ -35,7 +35,7 @@ function RouteUiEffects() {
       return;
     }
 
-    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    target.scrollIntoView({behavior: 'smooth', block: 'center'});
     target.classList.add('section--focus');
 
     const timeoutId = window.setTimeout(() => {

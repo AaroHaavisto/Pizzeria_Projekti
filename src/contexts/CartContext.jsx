@@ -1,8 +1,10 @@
 import {createContext, useContext, useMemo, useState} from 'react';
+import {useLanguage} from './LanguageContext';
 
 const CART_STORAGE_KEY = 'pizzeria_pro_cart';
 
 const CartContext = createContext(null);
+const MAX_CART_TOTAL = 100;
 
 /**
  * Safely parses JSON string with fallback value.
@@ -87,6 +89,8 @@ function sumCartTotals(items) {
 
 export function CartProvider({children}) {
   const [items, setItems] = useState(() => getInitialCartItems());
+  const {language} = useLanguage();
+  const [limitMessage, setLimitMessage] = useState('');
 
   function persist(nextItems) {
     setItems(nextItems);
@@ -108,53 +112,109 @@ export function CartProvider({children}) {
 
         const existing = items.find(item => item.id === cartItem.id);
 
-        if (existing) {
-          const nextQuantity = Math.min(100, Math.max(0, existing.quantity) + 1);
+        const currentTotals = sumCartTotals(items);
+        const remainingAllowed = Math.max(0, MAX_CART_TOTAL - currentTotals.quantity);
 
-          persist(
-            items.map(item =>
-              item.id === cartItem.id
-                ? {
-                    ...item,
-                    quantity: nextQuantity,
-                    zeroedAt: nextQuantity > 0 ? null : item.zeroedAt ?? Date.now(),
-                  }
-                : item
-            )
+        if (existing) {
+          if (remainingAllowed <= 0) {
+            setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+            return {ok: false, message: limitMessage};
+          }
+
+          const nextQuantity = existing.quantity + 1;
+          const allowedQuantity = Math.min(nextQuantity, existing.quantity + remainingAllowed);
+
+          const nextItems = items.map(item =>
+            item.id === cartItem.id
+              ? {
+                  ...item,
+                  quantity: allowedQuantity,
+                  zeroedAt: allowedQuantity > 0 ? null : item.zeroedAt ?? Date.now(),
+                }
+              : item
           );
-          return;
+
+          persist(nextItems);
+
+          if (allowedQuantity < nextQuantity) {
+            setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+            return {ok: false, message: limitMessage};
+          }
+
+          return {ok: true};
         }
 
-        persist([...items, cartItem]);
+        if (remainingAllowed <= 0) {
+          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+          return {ok: false, message: limitMessage};
+        }
+
+        // For new item, only add one or the remaining allowed if it's 0
+        const initialQuantity = Math.min(1, remainingAllowed);
+        const newItem = {...cartItem, quantity: initialQuantity};
+        persist([...items, newItem]);
+        if (initialQuantity < 1) {
+          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+          return {ok: false, message: limitMessage};
+        }
+
+        return {ok: true};
       },
       updateQuantity(itemId, quantity) {
         const resolvedQuantity = Math.trunc(Number(quantity));
 
         if (!Number.isFinite(resolvedQuantity) || resolvedQuantity < 0) {
           persist(items.filter(item => item.id !== itemId));
-          return;
+          return {ok: true};
         }
 
-        const nextQuantity = Math.min(100, resolvedQuantity);
+        const currentTotals = sumCartTotals(items);
+        const currentItem = items.find(i => i.id === itemId);
+        const otherTotal = currentTotals.quantity - (currentItem ? currentItem.quantity : 0);
+        const allowedForThis = Math.max(0, MAX_CART_TOTAL - otherTotal);
 
-        persist(
-          items.map(item =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  quantity: nextQuantity,
-                  zeroedAt: nextQuantity === 0 ? item.zeroedAt ?? Date.now() : null,
-                }
-              : item
-          )
+        const nextQuantity = Math.min(allowedForThis, resolvedQuantity);
+
+        let nextItems = items.map(item =>
+          item.id === itemId
+            ? {
+                ...item,
+                quantity: nextQuantity,
+                zeroedAt: nextQuantity === 0 ? item.zeroedAt ?? Date.now() : null,
+              }
+            : item
         );
+
+        // If quantity is zero, remove the item entirely
+        if (nextQuantity === 0) {
+          nextItems = nextItems.filter(item => item.id !== itemId);
+        }
+
+        persist(nextItems);
+
+        if (resolvedQuantity > allowedForThis) {
+          setLimitMessage(language === 'en' ? 'Maximum 100 pizzas in cart' : 'Maksimi 100 pizzaa korissa');
+          return {ok: false, message: limitMessage};
+        }
+
+        // Clear limit message if we're below the maximum now
+        if (sumCartTotals(nextItems).quantity < MAX_CART_TOTAL && limitMessage) {
+          setLimitMessage('');
+        }
+
+        return {ok: true};
       },
       removeFromCart(itemId) {
         persist(items.filter(item => item.id !== itemId));
+        if (sumCartTotals(items).quantity < MAX_CART_TOTAL && limitMessage) {
+          setLimitMessage('');
+        }
       },
       clearCart() {
         persist([]);
       },
+      cartLimitReached: limitMessage ? true : false,
+      cartLimitMessage: limitMessage,
     };
   }, [items]);
 

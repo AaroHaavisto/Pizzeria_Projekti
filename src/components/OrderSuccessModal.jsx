@@ -103,6 +103,13 @@ function OrderSuccessModal({order, onClose}) {
           <Link className="button button--primary" to="/">
             Takaisin etusivulle
           </Link>
+          <Link
+            className="button button--secondary"
+            to={`/account#order-${order.id}`}
+            onClick={onClose}
+          >
+            {formattedTotal ? 'Katso tilausta' : 'Katso tilausta'}
+          </Link>
           <button
             className="button button--secondary"
             type="button"

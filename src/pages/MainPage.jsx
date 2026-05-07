@@ -2,16 +2,10 @@ import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {getFeaturedMenuItems} from '../api/menuApi';
 import {fetchOpeningHours} from '../api/openingHoursApi';
-import {fetchRatings} from '../api/ratingsApi';
 import Navigation from '../components/Navigation';
 import {useLanguage} from '../contexts/LanguageContext';
+import {useCart} from '../contexts/CartContext';
 
-/**
- * Formats price in cents to currency string.
- * @param {number} cents - Price in cents
- * @param {string} currency - Currency code (default: EUR)
- * @returns {string} Formatted currency string
- */
 function formatPriceCents(cents, currency = 'EUR') {
   return new Intl.NumberFormat('fi-FI', {
     style: 'currency',
@@ -20,14 +14,11 @@ function formatPriceCents(cents, currency = 'EUR') {
   }).format(Number(cents) / 100);
 }
 
-/**
- * Main homepage component.
- * Displays featured items, offers, ratings, opening hours.
- * @returns {React.ReactElement} Main page JSX
- */
 function MainPage() {
   const {language} = useLanguage();
   const isEnglish = language === 'en';
+  const {addToCart} = useCart();
+
   const fallbackRatings = [
     {id: 1, score: '4.8/5', description: isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'},
   ];
@@ -108,9 +99,54 @@ function MainPage() {
           image: '/src/assets/images/pizza-margherita.jpg',
         },
       ];
+
   const [menuItems, setMenuItems] = useState(fallbackMenuItems);
   const [ratings, setRatings] = useState(fallbackRatings);
   const [openingHours, setOpeningHours] = useState(fallbackOpeningHours);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadOpeningHours() {
+      const hours = await fetchOpeningHours();
+      if (mounted && hours) setOpeningHours(hours);
+    }
+    loadOpeningHours();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadRatings() {
+      try {
+        const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
+        const response = await fetch(`${base}/api/ratings`);
+        if (!response.ok) throw new Error('Failed to fetch ratings');
+        const data = await response.json();
+        if (mounted && Array.isArray(data.ratings)) setRatings(data.ratings);
+      } catch {
+        // keep fallback
+      }
+    }
+    loadRatings();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadFeatured() {
+      try {
+        const featured = await getFeaturedMenuItems();
+        if (mounted && Array.isArray(featured) && featured.length > 0) setMenuItems(featured);
+      } catch {
+        // keep fallback
+      }
+    }
+    loadFeatured();
+    return () => { mounted = false; };
+  }, []);
+
   const ratingSummary = (ratings && ratings.length > 0) ? ratings[0] : fallbackRatings[0];
   const displayOpeningHours = isEnglish
     ? {
@@ -121,109 +157,6 @@ function MainPage() {
         weekendsLabel: 'Sat - Sun',
       }
     : openingHours;
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadOpeningHours() {
-      const hours = await fetchOpeningHours();
-      if (mounted) {
-        setOpeningHours(hours);
-      }
-    }
-
-    loadOpeningHours();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadRatings() {
-      try {
-        const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
-        const response = await fetch(`${base}/api/ratings`);
-        if (!response.ok) throw new Error('Failed to fetch ratings');
-        const data = await response.json();
-        if (mounted && Array.isArray(data.ratings)) {
-          setRatings(data.ratings);
-        }
-      } catch {
-        // Keep fallback ratings if API cannot be reached.
-      }
-    }
-
-    loadRatings();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
-        // Page became visible, refresh ratings
-        (async () => {
-          try {
-            const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
-            const response = await fetch(`${base}/api/ratings`);
-            if (response.ok) {
-              const data = await response.json();
-              if (Array.isArray(data.ratings)) {
-                setRatings(data.ratings);
-              }
-            }
-          } catch {
-            // Keep current ratings if refresh fails
-          }
-        })();
-      }
-    }
-
-    async function handleRatingsUpdate() {
-      try {
-        const data = await fetchRatings();
-        if (Array.isArray(data)) {
-          setRatings(data);
-        }
-      } catch {
-        // keep existing ratings on failure
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('ratingsUpdated', handleRatingsUpdate);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('ratingsUpdated', handleRatingsUpdate);
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadFeatured() {
-      try {
-        const featured = await getFeaturedMenuItems();
-
-        if (mounted && featured.length > 0) {
-          setMenuItems(featured);
-        }
-      } catch {
-        // Keep fallback menu items if API cannot be reached.
-      }
-    }
-
-    loadFeatured();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   return (
     <>
@@ -288,7 +221,6 @@ function MainPage() {
               </p>
             </div>
           </div>
-          
         </section>
       </header>
 
@@ -313,6 +245,17 @@ function MainPage() {
                   className="menu-card menu-card--clickable"
                   key={item.id || item.name}
                   to={`/menu?focus=${encodeURIComponent(item.id)}#pizza-${encodeURIComponent(item.id)}`}
+                  onClick={() => {
+                    // add to cart on featured click (non-blocking)
+                    addToCart({
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      image: item.image,
+                      price: item.price,
+                      priceCents: Number(item.priceCents || 0),
+                    });
+                  }}
                 >
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>

@@ -96,6 +96,16 @@
   text-align: right;
 }
 
+.cart-item__line-total {
+  color: #7a4128;
+  font-weight: 800;
+}
+
+.cart-item__line-discount {
+  color: #b80f0f;
+  font-weight: 800;
+}
+
 .cart-item__price-line span:last-child {
   color: #7a4128;
   font-weight: 800;
@@ -151,6 +161,40 @@
   gap: 16px;
   align-content: start;
   position: static;
+}
+
+.cart-summary__normal.small {
+  font-size: 0.92rem;
+  color: #6b4e41;
+  margin: 0;
+}
+
+.cart-summary__normal-price {
+  text-decoration: line-through;
+  margin-right: 8px;
+}
+
+.cart-summary__save {
+  color: #b80f0f;
+  font-weight: 800;
+  margin-left: 6px;
+}
+
+.cart-summary__discount {
+  color: #111;
+  font-weight: 900;
+  font-size: 1.7rem;
+  margin: 0;
+}
+
+.cart-contact {
+  font-size: 0.95rem;
+  color: #4b3a31;
+  margin: 0;
+}
+
+.cart-limit {
+  margin: 0;
 }
 
 .cart-summary__actions {

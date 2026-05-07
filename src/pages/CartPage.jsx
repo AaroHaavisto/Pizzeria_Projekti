@@ -29,6 +29,8 @@ function CartPage() {
     updateQuantity,
     removeFromCart,
     clearCart,
+    cartLimitReached,
+    cartLimitMessage,
   } = useCart();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -265,9 +267,16 @@ function CartPage() {
                       </button>
                       <strong className="cart-item__price-line">
                         <span>{isEnglish ? 'Unit' : 'Kpl'} {formatEuros(item.priceCents)}</span>
-                        <span>{isEnglish ? 'Line' : 'Rivi'} {offerActive
-                          ? formatEuros(applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer) * item.quantity)
-                          : formatEuros(Number(item.priceCents) * item.quantity)}</span>
+                        <span className="cart-item__line-total">
+                          {isEnglish ? 'Yht' : 'Yht'} {offerActive
+                            ? formatEuros(applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer) * item.quantity)
+                            : formatEuros(Number(item.priceCents) * item.quantity)}
+                        </span>
+                        {offerActive && Number(item.priceCents) > applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer) ? (
+                          <span className="cart-item__line-discount">
+                            - {formatEuros((Number(item.priceCents) - applyLunchDiscount(Number(item.priceCents) || 0, new Date(), offer)) * item.quantity)}
+                          </span>
+                        ) : null}
                       </strong>
                     </div>
                   </div>
@@ -286,8 +295,8 @@ function CartPage() {
           <p className="section__label">{isEnglish ? 'Summary' : 'Yhteenveto'}</p>
           {offerActive ? (
             <>
+              <p className="cart-summary__normal small">{isEnglish ? 'Norm.' : 'Norm.'} <span className="cart-summary__normal-price">{formatEuro(normalTotalCents)}</span> <span className="cart-summary__save">- {formatEuro(normalTotalCents - discountedTotalCents)}</span></p>
               <h2 className="cart-summary__discount">{formatEuro(discountedTotalCents)}</h2>
-              <p className="cart-summary__normal">{isEnglish ? 'Reg.' : 'Norm.'} {formatEuro(normalTotalCents)}</p>
             </>
           ) : (
             <>
@@ -302,6 +311,10 @@ function CartPage() {
             </p>
           )}
 
+          {cartLimitReached ? (
+            <p className="cart-contact" role="status">{isEnglish ? 'Contact us if you want to place a larger order.' : 'Ota meihin yhteyttä, jos haluat tehdä suuremman tilauksen'}</p>
+          ) : null}
+
           <div className="cart-summary__actions">
             <button
               className="button button--primary"
@@ -315,6 +328,10 @@ function CartPage() {
               {isEnglish ? 'Continue ordering' : 'Jatka tilausta'}
             </Link>
           </div>
+
+          {cartLimitReached ? (
+            <p className="cart-limit" role="status">{cartLimitMessage}</p>
+          ) : null}
 
           <button
             className="chip-link chip-link--button"

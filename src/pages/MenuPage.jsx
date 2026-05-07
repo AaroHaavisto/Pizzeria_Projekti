@@ -25,7 +25,7 @@ function flattenMenuItems(menuData) {
 }
 
 function MenuPage() {
-  const {addToCart, items, updateQuantity, itemCount, totalCents} = useCart();
+  const {addToCart, items, updateQuantity, itemCount, totalCents, cartLimitReached, cartLimitMessage} = useCart();
   const {language} = useLanguage();
   const isEnglish = language === 'en';
   const location = useLocation();
@@ -126,7 +126,7 @@ function MenuPage() {
       return undefined;
     }
 
-    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    target.scrollIntoView({behavior: 'smooth', block: 'center'});
     target.classList.add('section--focus');
 
     const timeoutId = window.setTimeout(() => {
@@ -184,6 +184,10 @@ function MenuPage() {
             </span>
           </div>
 
+          {cartLimitReached ? (
+            <p className="cart-limit" role="status">{cartLimitMessage}</p>
+          ) : null}
+
           {items.length > 0 ? (
             <div className="menu-summary-card__cart-preview">
               <p className="section__label">{isEnglish ? 'My purchases' : 'Omat ostokset'}</p>
@@ -199,7 +203,7 @@ function MenuPage() {
         </section>
 
         <div className="menu-days" id="menu-lista">
-          <section className="day-section day-section--today" id="menu-pizzat">
+          <section className="day-section day-section--today day-section--menu" id="menu-pizzat">
             <div className="section__heading">
               <div className="menu-filter-inline">
                 <div className="menu-filter-inline__buttons">
@@ -208,7 +212,11 @@ function MenuPage() {
                       menuFilter === 'veg' ? ' chip-link--button--active' : ''
                     }`}
                     type="button"
-                    onClick={() => setMenuFilter('veg')}
+                    onClick={() => {
+                      setMenuFilter('veg');
+                      const target = document.getElementById('menu-pizzat');
+                      if (target) target.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    }}
                   >
                     {isEnglish ? 'Veg' : 'Vege'}
                   </button>
@@ -218,7 +226,11 @@ function MenuPage() {
                       menuFilter === 'meat' ? ' chip-link--button--active' : ''
                     }`}
                     type="button"
-                    onClick={() => setMenuFilter('meat')}
+                    onClick={() => {
+                      setMenuFilter('meat');
+                      const target = document.getElementById('menu-pizzat');
+                      if (target) target.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    }}
                   >
                     {isEnglish ? 'Meat' : 'Liha'}
                   </button>
@@ -228,7 +240,11 @@ function MenuPage() {
                       menuFilter === 'all' ? ' chip-link--button--active' : ''
                     }`}
                     type="button"
-                    onClick={() => setMenuFilter('all')}
+                    onClick={() => {
+                      setMenuFilter('all');
+                      const target = document.getElementById('menu-pizzat');
+                      if (target) target.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    }}
                   >
                     {isEnglish ? 'All' : 'Kaikki'}
                   </button>

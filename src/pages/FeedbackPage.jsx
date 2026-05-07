@@ -51,7 +51,7 @@ function FeedbackPage() {
         : {
             eyebrow: 'Palaute',
             title: 'Anna palautetta kirjautuneena.',
-            text: 'Voit kommentoida menuuta, palvelua tai tilauspolkua.',
+            text: 'Voit kommentoida palveluistamme.',
             rating: 'Arvio',
             message: 'Viesti',
             submit: 'Lähetä palaute',
@@ -104,7 +104,7 @@ function FeedbackPage() {
           <form className="account-form" onSubmit={handleSubmit}>
             <label className="field">
               <span>{labels.rating}</span>
-              <select value={rating} onChange={event => setRating(event.target.value)}>
+              <select className="rating-select" value={rating} onChange={event => setRating(event.target.value)}>
                 <option value="5">5</option>
                 <option value="4">4</option>
                 <option value="3">3</option>
