@@ -17,7 +17,7 @@ import announcementRoutes from './routes/announcementRoutes.js';
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PORT = process.env.API_PORT || 3001;
+const PORT = process.env.API_PORT || 3005;
 
 app.use(cors());
 app.use(express.json());
@@ -27,7 +27,7 @@ app.get('/', (_req, res) => {
     .status(200)
     .type('text/plain')
     .send(
-      'Pizzeria Pro API is running. Try /api/health or /api/menu for database-backed menu data.'
+      'Slice Hunt API is running. Try /api/health or /api/menu for database-backed menu data.'
     );
 });
 
@@ -65,8 +65,13 @@ app.use(errorHandler);
 async function startServer() {
   await initDatabase();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`API server running on http://localhost:${PORT}`);
+  });
+
+  server.on('error', err => {
+    console.error('API server failed to start', err);
+    process.exit(1);
   });
 }
 

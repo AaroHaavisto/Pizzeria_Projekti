@@ -1,10 +1,11 @@
 /**
- * End-to-End Tests for Pizzeria Pro Frontend
+ * End-to-End Tests for Slice Hunt Frontend
  * Verifies complete application functionality and routes
  */
 
-const APP_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:3005/api';
+import {getTestConfig} from '../utils/testConfig.js';
+
+const {appUrl: APP_URL, apiUrl: API_URL} = getTestConfig();
 
 // Test utilities
 function assertEqual(actual, expected, message) {
@@ -31,7 +32,7 @@ async function testApplicationLoad() {
     assertEqual(response.status, 200, 'Application loads with 200 status');
     
     const html = await response.text();
-    assertTrue(html.includes('Pizzeria Pro') || html.includes('react'), 'React app is loaded');
+    assertTrue(html.includes('Slice Hunt') || html.includes('react'), 'React app is loaded');
     
     console.log('  ✓ Application is running and serving content');
     console.log('  PASSED');
@@ -267,7 +268,7 @@ async function testUserRegistration() {
  */
 async function runAllTests() {
   console.log('╔═══════════════════════════════════════════════════════╗');
-  console.log('║    PIZZERIA PRO - E2E APPLICATION TESTS               ║');
+  console.log('║    SLICE HUNT - E2E APPLICATION TESTS                 ║');
   console.log('╚═══════════════════════════════════════════════════════╝');
   console.log(`Testing app at: ${APP_URL}`);
   console.log(`Testing API at: ${API_URL}`);
@@ -301,11 +302,11 @@ async function runAllTests() {
   console.log(`║   RESULTS: ${passed} passed, ${failed} failed                      ║`);
   console.log('╚═══════════════════════════════════════════════════════╝');
   
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
 // Run tests
 runAllTests().catch(error => {
   console.error('Test runner error:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

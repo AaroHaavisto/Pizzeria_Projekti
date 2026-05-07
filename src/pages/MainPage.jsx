@@ -3,21 +3,17 @@ import {Link} from 'react-router-dom';
 import {getFeaturedMenuItems} from '../api/menuApi';
 import {fetchOpeningHours} from '../api/openingHoursApi';
 import Navigation from '../components/Navigation';
-import {useLanguage} from '../contexts/LanguageContext';
 import {useCart} from '../contexts/CartContext';
-
-function formatPriceCents(cents, currency = 'EUR') {
-  return new Intl.NumberFormat('fi-FI', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(Number(cents) / 100);
-}
+import {useLanguage} from '../contexts/LanguageContext';
+import {useOffer} from '../contexts/OfferContext';
+import {applyLunchDiscount, formatEuro, isLunchOfferActive} from '../utils/offer';
 
 function MainPage() {
   const {language} = useLanguage();
   const isEnglish = language === 'en';
   const {addToCart} = useCart();
+  const {offer} = useOffer();
+  const offerActive = isLunchOfferActive(new Date(), offer);
 
   const fallbackRatings = [
     {id: 1, score: '4.8/5', description: isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'},
@@ -106,11 +102,16 @@ function MainPage() {
 
   useEffect(() => {
     let mounted = true;
+
     async function loadOpeningHours() {
       const hours = await fetchOpeningHours();
-      if (mounted && hours) setOpeningHours(hours);
+      if (mounted && hours) {
+        setOpeningHours(hours);
+      }
     }
+
     loadOpeningHours();
+
     return () => {
       mounted = false;
     };
@@ -118,36 +119,50 @@ function MainPage() {
 
   useEffect(() => {
     let mounted = true;
+
     async function loadRatings() {
       try {
         const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
         const response = await fetch(`${base}/api/ratings`);
         if (!response.ok) throw new Error('Failed to fetch ratings');
         const data = await response.json();
-        if (mounted && Array.isArray(data.ratings)) setRatings(data.ratings);
+        if (mounted && Array.isArray(data.ratings)) {
+          setRatings(data.ratings);
+        }
       } catch {
-        // keep fallback
+        // keep fallback ratings
       }
     }
+
     loadRatings();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
     let mounted = true;
+
     async function loadFeatured() {
       try {
         const featured = await getFeaturedMenuItems();
-        if (mounted && Array.isArray(featured) && featured.length > 0) setMenuItems(featured);
+        if (mounted && Array.isArray(featured) && featured.length > 0) {
+          setMenuItems(featured);
+        }
       } catch {
-        // keep fallback
+        // keep fallback menu items
       }
     }
+
     loadFeatured();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const ratingSummary = (ratings && ratings.length > 0) ? ratings[0] : fallbackRatings[0];
+  const ratingSummary = ratings.length > 0 ? ratings[0] : fallbackRatings[0];
   const displayOpeningHours = isEnglish
     ? {
         ...openingHours,
@@ -164,11 +179,7 @@ function MainPage() {
         <Navigation />
 
         <section className="hero__content" id="etusivu">
-          <div
-            className="hero__title-banner"
-            role="img"
-            aria-label="Tuore pizza puupöydällä"
-          >
+          <div className="hero__title-banner" role="img" aria-label="Tuore pizza puupöydällä">
             <h1>{isEnglish ? 'Pizza that actually tastes Italian.' : 'Pizzaa, joka maistuu oikeasti italialaiselta.'}</h1>
           </div>
           <p className="hero__text">
@@ -239,6 +250,8 @@ function MainPage() {
           <div className="menu-grid">
             {menuItems.map(item => {
               const priceCents = Number(item.priceCents || 0);
+              const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
+              const hasDiscount = offerActive && discountedCents < priceCents;
 
               return (
                 <Link
@@ -246,7 +259,6 @@ function MainPage() {
                   key={item.id || item.name}
                   to={`/menu?focus=${encodeURIComponent(item.id)}#pizza-${encodeURIComponent(item.id)}`}
                   onClick={() => {
-                    // add to cart on featured click (non-blocking)
                     addToCart({
                       id: item.id,
                       name: item.name,
@@ -260,8 +272,24 @@ function MainPage() {
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>
                   <div className="price-row">
-                    <span className="menu-card__price-normal">{formatPriceCents(priceCents)}</span>
+                    {hasDiscount ? (
+                      <>
+                        <span className="menu-card__price-old">{formatEuro(priceCents)}</span>
+                        <span className="menu-card__price-discount">{formatEuro(discountedCents)}</span>
+                        <span className="menu-card__price-save">
+                          {isEnglish ? 'Save' : 'Säästät'} {formatEuro(priceCents - discountedCents)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="menu-card__price-normal">{formatEuro(priceCents)}</span>
+                    )}
                   </div>
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    draggable={false}
+                    onDragStart={event => event.preventDefault()}
+                  />
                 </Link>
               );
             })}

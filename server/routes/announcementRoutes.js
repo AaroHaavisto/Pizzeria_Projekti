@@ -6,18 +6,30 @@ const router = express.Router();
 
 let announcements = [
   {
+    id: 'summer-opening-hours',
     announcementId: 'summer-opening-hours',
     title: 'Kesän aukioloajat',
+    message: 'Olemme kesällä avoinna joka päivä klo 10–22.',
     content: 'Olemme kesällä avoinna joka päivä klo 10–22.',
     active: true,
   },
   {
+    id: 'new-pizza',
     announcementId: 'new-pizza',
     title: 'Uusi pizza listalla',
+    message: 'Kokeile uutta tulista Diavola-pizzaamme.',
     content: 'Kokeile uutta tulista Diavola-pizzaamme.',
     active: true,
   },
 ];
+
+function normalizeAnnouncement(announcement) {
+  return {
+    ...announcement,
+    id: announcement.id || announcement.announcementId,
+    message: announcement.message || announcement.content,
+  };
+}
 
 function createAnnouncementId(title) {
   return String(title || 'tiedote')
@@ -53,7 +65,7 @@ function validateAnnouncement(payload) {
 }
 
 router.get('/', (_req, res) => {
-  res.json({announcements});
+  res.json({announcements: announcements.map(normalizeAnnouncement)});
 });
 
 router.post('/', requireAdmin, (req, res) => {
@@ -69,9 +81,13 @@ router.post('/', requireAdmin, (req, res) => {
       );
     }
 
+    const announcementId = createAnnouncementId(req.body.title);
+
     const announcement = {
-      announcementId: createAnnouncementId(req.body.title),
+      id: announcementId,
+      announcementId,
       title: req.body.title.trim(),
+      message: req.body.content.trim(),
       content: req.body.content.trim(),
       active: Boolean(req.body.active),
     };
@@ -80,8 +96,8 @@ router.post('/', requireAdmin, (req, res) => {
 
     res.status(201).json({
       message: 'Announcement created',
-      announcement,
-      announcements,
+      announcement: normalizeAnnouncement(announcement),
+      announcements: announcements.map(normalizeAnnouncement),
     });
   } catch (err) {
     sendError(res, err);
@@ -117,6 +133,7 @@ router.put('/:announcementId', requireAdmin, (req, res) => {
     const updatedAnnouncement = {
       ...existing,
       title: req.body.title.trim(),
+      message: req.body.content.trim(),
       content: req.body.content.trim(),
       active: Boolean(req.body.active),
     };
@@ -129,8 +146,8 @@ router.put('/:announcementId', requireAdmin, (req, res) => {
 
     res.json({
       message: 'Announcement updated',
-      announcement: updatedAnnouncement,
-      announcements,
+      announcement: normalizeAnnouncement(updatedAnnouncement),
+      announcements: announcements.map(normalizeAnnouncement),
     });
   } catch (err) {
     sendError(res, err);

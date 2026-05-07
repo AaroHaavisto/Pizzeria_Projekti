@@ -1,9 +1,11 @@
 /**
- * Integration Tests for Pizzeria Pro Orders
+ * Integration Tests for Slice Hunt Orders
  * Tests order creation, retrieval, and management
  */
 
-const BASE_URL = 'http://localhost:3005/api';
+import {getTestConfig} from '../utils/testConfig.js';
+
+const {apiUrl: BASE_URL} = getTestConfig();
 
 // Test utilities
 function assertEqual(actual, expected, message) {
@@ -97,13 +99,11 @@ async function testGetOrderStatus() {
       
       // Now retrieve the order
       const getResponse = await fetch(`${BASE_URL}/orders/${orderId}`);
-      assertTrue([200, 404].includes(getResponse.status), 'Order retrieval endpoint is functional');
-      
-      if (getResponse.status === 200) {
-        const getData = await getResponse.json();
-        assertExists(getData.order, 'Order data returned');
-        console.log(`  Order ${orderId}: ${getData.order.status}`);
-      }
+      assertEqual(getResponse.status, 200, 'Order retrieval endpoint returns 200');
+
+      const getData = await getResponse.json();
+      assertExists(getData.order, 'Order data returned');
+      console.log(`  Order ${orderId}: ${getData.order.status}`);
     }
     console.log('  PASSED');
   } catch (error) {
@@ -193,7 +193,12 @@ async function testOrderWithDiscount() {
   console.log('\n=== Test 5: Order with Lunch Discount ===');
   try {
     // Get lunch offer details
-    const offerResponse = await fetch(`${BASE_URL}/settings/lunch-offer`);
+    let offerResponse = await fetch(`${BASE_URL}/settings/lunch-offer`);
+
+    if (offerResponse.status === 404) {
+      offerResponse = await fetch(`${BASE_URL}/lunch-offer`);
+    }
+
     const offerData = await offerResponse.json();
     const discountPercent = offerData.lunchOffer.discountPercent;
     
@@ -232,7 +237,7 @@ async function testOrderWithDiscount() {
  */
 async function runAllTests() {
   console.log('╔════════════════════════════════════════════╗');
-  console.log('║   PIZZERIA PRO - ORDERS INTEGRATION TESTS ║');
+  console.log('║   SLICE HUNT - ORDERS INTEGRATION TESTS   ║');
   console.log('╚════════════════════════════════════════════╝');
   console.log(`Testing API at: ${BASE_URL}`);
   
@@ -260,11 +265,11 @@ async function runAllTests() {
   console.log(`║   RESULTS: ${passed} passed, ${failed} failed          ║`);
   console.log('╚════════════════════════════════════════════╝');
   
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
 // Run tests
 runAllTests().catch(error => {
   console.error('Test runner error:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

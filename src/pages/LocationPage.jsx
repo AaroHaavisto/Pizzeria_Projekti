@@ -21,7 +21,7 @@ function LocationPage() {
   const isEnglish = language === 'en';
 
   useEffect(() => {
-    document.title = isEnglish ? 'Location - Pizzeria Pro' : 'Sijainti - Pizzeria Pro';
+    document.title = isEnglish ? 'Location - Slice Hunt' : 'Sijainti - Slice Hunt';
   }, [isEnglish]);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(RESTAURANT_ADDRESS)}`;
@@ -50,7 +50,7 @@ function LocationPage() {
                 <Tooltip permanent direction="top" offset={[0, -14]}>
                   {RESTAURANT_ADDRESS}
                 </Tooltip>
-                <Popup>Pizzeria Pro - {RESTAURANT_ADDRESS}</Popup>
+                <Popup>Slice Hunt - {RESTAURANT_ADDRESS}</Popup>
               </Marker>
             </MapContainer>
           </div>

@@ -1,8 +1,8 @@
-# Pizzeria Pro - Test Suite Documentation
+# Slice Hunt - Test Suite Documentation
 
 ## Overview
 
-This directory contains comprehensive test coverage for Pizzeria Pro, including:
+This directory contains comprehensive test coverage for Slice Hunt, including:
 - **Integration Tests**: 15+ tests for API endpoints
 - **End-to-End Tests**: 15+ tests for complete user workflows
 
@@ -139,7 +139,7 @@ Each test file will output:
 Example:
 ```
 ╔════════════════════════════════════════════╗
-║   PIZZERIA PRO - INTEGRATION TESTS       ║
+║   SLICE HUNT - INTEGRATION TESTS         ║
 ╚════════════════════════════════════════════╝
 Testing API at: http://localhost:3005/api
 

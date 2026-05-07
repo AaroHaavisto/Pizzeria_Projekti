@@ -60,7 +60,7 @@ export async function initDatabase() {
     const locationColumns = await getTableColumns(pool, 'locations');
 
     const payload = {
-      name: 'Pizzeria Pro',
+      name: 'Slice Hunt',
       address: 'Urho Kekkosen katu 1, 00100 Helsinki',
       is_default: 1,
     };

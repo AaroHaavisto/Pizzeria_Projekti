@@ -1,9 +1,11 @@
 /**
- * End-to-End User Workflow Tests for Pizzeria Pro
+ * End-to-End User Workflow Tests for Slice Hunt
  * Tests complete user journeys: registration, login, ordering, and feedback
  */
 
-const API_URL = 'http://localhost:3005/api';
+import {getTestConfig} from '../utils/testConfig.js';
+
+const {apiUrl: API_URL} = getTestConfig();
 
 // Test utilities
 function assertEqual(actual, expected, message) {
@@ -258,7 +260,7 @@ async function testFeedbackSubmission() {
  */
 async function runAllTests() {
   console.log('╔═══════════════════════════════════════════════════════╗');
-  console.log('║   PIZZERIA PRO - USER WORKFLOW E2E TESTS             ║');
+  console.log('║   SLICE HUNT - USER WORKFLOW E2E TESTS               ║');
   console.log('╚═══════════════════════════════════════════════════════╝');
   console.log(`Testing API at: ${API_URL}`);
   
@@ -286,11 +288,11 @@ async function runAllTests() {
   console.log(`║   RESULTS: ${passed} passed, ${failed} failed                      ║`);
   console.log('╚═══════════════════════════════════════════════════════╝');
   
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
 // Run tests
 runAllTests().catch(error => {
   console.error('Test runner error:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

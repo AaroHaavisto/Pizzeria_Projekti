@@ -1,9 +1,11 @@
 /**
- * Integration Tests for Pizzeria Pro Ratings and Announcements
+ * Integration Tests for Slice Hunt Ratings and Announcements
  * Tests user ratings, feedback, and announcements management
  */
 
-const BASE_URL = 'http://localhost:3005/api';
+import {getTestConfig} from '../utils/testConfig.js';
+
+const {apiUrl: BASE_URL} = getTestConfig();
 
 // Test utilities
 function assertEqual(actual, expected, message) {
@@ -70,14 +72,12 @@ async function testSubmitMenuRating() {
       body: JSON.stringify(rating)
     });
     
-    assertTrue([200, 201, 400].includes(response.status), 'Rating submission endpoint is functional');
-    
-    if (response.status === 200 || response.status === 201) {
-      const data = await response.json();
-      if (data.rating) {
-        console.log(`  Rating ${data.rating.rating} stars submitted for item ${data.rating.menuItemId}`);
-        assertTrue(data.rating.rating >= 1 && data.rating.rating <= 5, 'Rating is in valid range');
-      }
+    assertTrue([200, 201].includes(response.status), 'Rating submission endpoint is functional');
+
+    const data = await response.json();
+    if (data.rating) {
+      console.log(`  Rating ${data.rating.rating} stars submitted for item ${data.rating.menuItemId}`);
+      assertTrue(data.rating.rating >= 1 && data.rating.rating <= 5, 'Rating is in valid range');
     }
     console.log('  PASSED');
   } catch (error) {
@@ -93,17 +93,15 @@ async function testGetMenuRatings() {
   console.log('\n=== Test 3: Get Menu Item Ratings ===');
   try {
     const response = await fetch(`${BASE_URL}/ratings/menu-items`);
-    assertTrue([200, 404].includes(response.status), 'Menu ratings endpoint is functional');
-    
-    if (response.status === 200) {
-      const data = await response.json();
-      assertTrue(Array.isArray(data.ratings), 'Ratings is an array');
-      console.log(`  Found ${data.ratings.length} ratings`);
-      
-      if (data.ratings.length > 0) {
-        const rating = data.ratings[0];
-        assertTrue(rating.rating >= 1 && rating.rating <= 5, 'Ratings are in valid range');
-      }
+    assertEqual(response.status, 200, 'Menu ratings endpoint returns 200');
+
+    const data = await response.json();
+    assertTrue(Array.isArray(data.ratings), 'Ratings is an array');
+    console.log(`  Found ${data.ratings.length} ratings`);
+
+    if (data.ratings.length > 0) {
+      const rating = data.ratings[0];
+      assertTrue(rating.rating >= 1 && rating.rating <= 5, 'Ratings are in valid range');
     }
     console.log('  PASSED');
   } catch (error) {
@@ -131,14 +129,12 @@ async function testSubmitRestaurantFeedback() {
       body: JSON.stringify(feedback)
     });
     
-    assertTrue([200, 201, 400].includes(response.status), 'Feedback submission endpoint is functional');
-    
-    if (response.status === 200 || response.status === 201) {
-      const data = await response.json();
-      if (data.feedback) {
-        console.log(`  Feedback submitted with ${data.feedback.rating} star rating`);
-        assertTrue(data.feedback.rating >= 1 && data.feedback.rating <= 5, 'Feedback rating is valid');
-      }
+    assertTrue([200, 201].includes(response.status), 'Feedback submission endpoint is functional');
+
+    const data = await response.json();
+    if (data.feedback) {
+      console.log(`  Feedback submitted with ${data.feedback.rating} star rating`);
+      assertTrue(data.feedback.rating >= 1 && data.feedback.rating <= 5, 'Feedback rating is valid');
     }
     console.log('  PASSED');
   } catch (error) {
@@ -165,11 +161,8 @@ async function testRatingValidation() {
       body: JSON.stringify(invalidRating)
     });
     
-    assertTrue([400, 201, 200].includes(response.status), 'Validation endpoint is functional');
-    
-    if (response.status === 400) {
-      console.log('  ✓ Invalid rating correctly rejected');
-    }
+    assertEqual(response.status, 400, 'Validation endpoint rejects invalid payload');
+    console.log('  ✓ Invalid rating correctly rejected');
     console.log('  PASSED');
   } catch (error) {
     console.error('  FAILED:', error.message);
@@ -182,7 +175,7 @@ async function testRatingValidation() {
  */
 async function runAllTests() {
   console.log('╔═══════════════════════════════════════════════════════╗');
-  console.log('║  PIZZERIA PRO - RATINGS & ANNOUNCEMENTS TESTS         ║');
+  console.log('║  SLICE HUNT - RATINGS & ANNOUNCEMENTS TESTS           ║');
   console.log('╚═══════════════════════════════════════════════════════╝');
   console.log(`Testing API at: ${BASE_URL}`);
   
@@ -210,11 +203,11 @@ async function runAllTests() {
   console.log(`║   RESULTS: ${passed} passed, ${failed} failed                      ║`);
   console.log('╚═══════════════════════════════════════════════════════╝');
   
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
 // Run tests
 runAllTests().catch(error => {
   console.error('Test runner error:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

@@ -85,7 +85,7 @@ router.put('/:itemId', requireAdmin, async (req, res) => {
     const payload = req.body;
 
     if (payload.itemId !== req.params.itemId) {
-      throw createHttpError(400, 'VALIDATION_ERROR', 'date mismatch', [
+      throw createHttpError(400, 'VALIDATION_ERROR', 'itemId mismatch', [
         'Body itemId must match URL param',
       ]);
     }

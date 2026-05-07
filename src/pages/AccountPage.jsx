@@ -36,7 +36,7 @@ function AccountPage() {
   const isRegistration = mode === 'register';
   const favoriteLocations = [
     {
-      name: 'Pizzeria Pro - keskusta',
+      name: 'Slice Hunt - keskusta',
       description: 'Urho Kekkosen katu 1, 00100 Helsinki',
       href: '/location',
     },

@@ -131,4 +131,18 @@ router.get('/customer/:customerId', async (req, res) => {
   }
 });
 
+router.get('/:orderId', async (req, res) => {
+  try {
+    const order = await getOrder(req.params.orderId);
+
+    if (!order) {
+      throw createHttpError(404, 'ORDER_NOT_FOUND', 'Order not found');
+    }
+
+    res.json({order});
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
 export default router;

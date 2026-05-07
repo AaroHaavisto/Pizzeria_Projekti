@@ -1,9 +1,11 @@
 /**
- * Integration Tests for Pizzeria Pro API
+ * Integration Tests for Slice Hunt API
  * Tests main API endpoints for menu, orders, settings, and authentication
  */
 
-const BASE_URL = 'http://localhost:3005/api';
+import {getTestConfig} from '../utils/testConfig.js';
+
+const {apiUrl: BASE_URL} = getTestConfig();
 
 /**
  * Test utilities
@@ -37,8 +39,8 @@ async function testGetMenuItems() {
   try {
     const response = await fetch(`${BASE_URL}/menu`);
     assertEqual(response.status, 200, 'Menu endpoint returns 200');
-    
     const data = await response.json();
+
     assertTrue(Array.isArray(data.items), 'Menu items is an array');
     assertTrue(data.items.length > 0, 'Menu has items');
     
@@ -180,7 +182,7 @@ async function testCreateCustomerAccount() {
  */
 async function runAllTests() {
   console.log('╔════════════════════════════════════════════╗');
-  console.log('║   PIZZERIA PRO - INTEGRATION TESTS       ║');
+  console.log('║   SLICE HUNT - INTEGRATION TESTS         ║');
   console.log('╚════════════════════════════════════════════╝');
   console.log(`Testing API at: ${BASE_URL}`);
   
@@ -208,11 +210,11 @@ async function runAllTests() {
   console.log(`║   RESULTS: ${passed} passed, ${failed} failed          ║`);
   console.log('╚════════════════════════════════════════════╝');
   
-  process.exit(failed > 0 ? 1 : 0);
+  process.exitCode = failed > 0 ? 1 : 0;
 }
 
 // Run tests
 runAllTests().catch(error => {
   console.error('Test runner error:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

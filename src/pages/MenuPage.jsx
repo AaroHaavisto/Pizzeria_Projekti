@@ -168,7 +168,7 @@ function MenuPage() {
         </section>
       </header>
 
-      <main className="pizza-showcase" aria-label="Pizzeria Pro menu listaus">
+      <main className="pizza-showcase" aria-label="Slice Hunt menu listaus">
         {isLoading ? <p>{isEnglish ? 'Loading menu...' : 'Ladataan menua...'}</p> : null}
         {loadError ? <p>{loadError}</p> : null}
 

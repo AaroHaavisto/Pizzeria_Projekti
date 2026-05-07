@@ -496,7 +496,7 @@ function AdminPage() {
 
         <section className="hero__content admin-hero">
           <p className="eyebrow">Hallinta</p>
-          <h1>Pizzeria Pron hallinta</h1>
+          <h1>Slice Huntin hallinta</h1>
           <p className="hero__text admin-hero__text">
             Hallitse pizzoja, lounastarjousta ja etusivun arvosanoja yhdestä
             näkymästä.

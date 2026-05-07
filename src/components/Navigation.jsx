@@ -20,7 +20,7 @@ function Navigation() {
   return (
     <nav className="topbar" aria-label={isEnglish ? 'Main navigation' : 'Päävalikko'}>
       <Link className="brand" to="/">
-        Pizzeria Pro
+        Slice Hunt
       </Link>
 
       <div className="topbar__links">
