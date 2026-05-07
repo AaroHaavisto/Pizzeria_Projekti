@@ -120,7 +120,7 @@ function MainPage() {
     let mounted = true;
     async function loadRatings() {
       try {
-        const base = `http://localhost:${import.meta.env.VITE_API_PORT || 3005}`;
+        const base = import.meta.env.VITE_API_BASE_URL || '';
         const response = await fetch(`${base}/api/ratings`);
         if (!response.ok) throw new Error('Failed to fetch ratings');
         const data = await response.json();
