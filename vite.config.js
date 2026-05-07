@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    base: isProduction ? '/~aarohaa/Pizzeria_Pro/' : '/',
+    base: isProduction ? '/~aarohaa/Slice_Hunt/' : '/',
 
     server: {
       port: 5173,
