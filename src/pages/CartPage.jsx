@@ -46,6 +46,7 @@ function CartPage() {
     (sum, it) => sum + applyLunchDiscount(Number(it.priceCents) || 0, new Date(), offer) * it.quantity,
     0
   );
+  const savedCents = Math.max(0, normalTotalCents - discountedTotalCents);
 
   const displayItems = useMemo(() => {
     return items
@@ -298,7 +299,7 @@ function CartPage() {
           <p className="section__label">{isEnglish ? 'Summary' : 'Yhteenveto'}</p>
           {offerActive ? (
             <>
-              <p className="cart-summary__normal small">{isEnglish ? 'Norm.' : 'Norm.'} <span className="cart-summary__normal-price">{formatEuro(normalTotalCents)}</span> <span className="cart-summary__save">- {formatEuro(normalTotalCents - discountedTotalCents)}</span></p>
+              <p className="cart-summary__normal small">{isEnglish ? 'Norm.' : 'Norm.'} <span className="cart-summary__normal-price">{formatEuro(normalTotalCents)}</span>{savedCents > 0 ? <span className="cart-summary__save"> - {formatEuro(savedCents)}</span> : null}</p>
               <h2 className="cart-summary__discount">{formatEuro(discountedTotalCents)}</h2>
             </>
           ) : (

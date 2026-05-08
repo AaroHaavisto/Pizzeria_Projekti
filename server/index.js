@@ -22,6 +22,10 @@ const PORT = process.env.API_PORT || 3005;
 app.use(cors());
 app.use(express.json());
 
+/**
+ * Root route — basic textual confirmation that the API is running.
+ * Primarily useful for quick manual checks in development.
+ */
 app.get('/', (_req, res) => {
   res
     .status(200)
@@ -31,6 +35,18 @@ app.get('/', (_req, res) => {
     );
 });
 
+/**
+ * Health-check endpoint used by uptime monitors and CI.
+ * Verifies database connectivity by calling `pingDatabase()`.
+ * Responds with a small JSON object describing status.
+ *
+ * @name GET /api/health
+ * @async
+ * @function
+ * @param {import('express').Request} _req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
 app.get('/api/health', async (_req, res, next) => {
   try {
     await pingDatabase();
@@ -62,6 +78,12 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(errorHandler);
 
+/**
+ * Initialize the database and start the Express HTTP server.
+ * Exits the process on irrecoverable startup errors.
+ *
+ * @returns {Promise<void>} Resolves when the server is listening.
+ */
 async function startServer() {
   await initDatabase();
 

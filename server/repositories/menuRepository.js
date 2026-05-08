@@ -1,5 +1,23 @@
 import {pool} from '../db/pool.js';
 
+/**
+ * @typedef {Object} MenuItem
+ * @property {string} itemId
+ * @property {string} name
+ * @property {string|null} description
+ * @property {number} priceCents
+ * @property {string} currency
+ * @property {string[]} diet
+ * @property {'lunch'|'a_la_carte'} mealType
+ * @property {string|null} image
+ * @property {boolean} featured
+ */
+
+/**
+ * Internal: choose a default image for a menu item when none provided.
+ * @param {object} item
+ * @returns {string|null}
+ */
 function getDefaultMenuImage(item) {
   const customImage = String(item?.image || '').trim();
 
@@ -14,6 +32,11 @@ function getDefaultMenuImage(item) {
   return item?.image || null;
 }
 
+/**
+ * Convert various dietary info representations into a CSV string.
+ * @param {string|string[]|undefined} value
+ * @returns {string}
+ */
 function formatDietaryInfo(value) {
   if (Array.isArray(value)) {
     return value.filter(Boolean).join(',');
@@ -26,6 +49,11 @@ function formatDietaryInfo(value) {
   return '';
 }
 
+/**
+ * Map a database row into the public `MenuItem` shape.
+ * @param {object} row
+ * @returns {MenuItem}
+ */
 function mapRowToItem(row) {
   const priceValue = Number(row.price ?? row.price_cents ?? 0);
   const priceCents = Number.isFinite(priceValue)
@@ -48,6 +76,11 @@ function mapRowToItem(row) {
   };
 }
 
+/**
+ * Fetch all menu items from the database.
+ * @async
+ * @returns {Promise<MenuItem[]>}
+ */
 export async function getAllMenuItems() {
   const [rows] = await pool.query(
     `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
@@ -58,6 +91,11 @@ export async function getAllMenuItems() {
   return rows.map(mapRowToItem);
 }
 
+/**
+ * Fetch featured menu items (where `featured = 1`).
+ * @async
+ * @returns {Promise<MenuItem[]>}
+ */
 export async function getFeaturedMenuItems() {
   const [rows] = await pool.query(
     `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
@@ -69,6 +107,12 @@ export async function getFeaturedMenuItems() {
   return rows.map(mapRowToItem);
 }
 
+/**
+ * Fetch a single menu item by id.
+ * @async
+ * @param {string|number} itemId
+ * @returns {Promise<MenuItem|null>}
+ */
 export async function getMenuItemById(itemId) {
   const [rows] = await pool.query(
     `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
@@ -85,6 +129,13 @@ export async function getMenuItemById(itemId) {
   return mapRowToItem(rows[0]);
 }
 
+/**
+ * Insert or update a menu item. If `item.itemId` is provided and exists
+ * the row is updated; otherwise a new row is inserted.
+ * @async
+ * @param {Partial<MenuItem> & {itemId?: string|number}} item
+ * @returns {Promise<void>}
+ */
 export async function upsertMenuItem(item) {
   const priceValue = Number(item.priceCents || 0) / 100;
   const dietaryInfo = formatDietaryInfo(item.diet);
@@ -155,6 +206,12 @@ export async function upsertMenuItem(item) {
   );
 }
 
+/**
+ * Delete a menu item by id.
+ * @async
+ * @param {string|number} itemId
+ * @returns {Promise<boolean>} true when a row was deleted
+ */
 export async function deleteMenuItem(itemId) {
   const [result] = await pool.query(
     `DELETE FROM menu_items WHERE menu_item_id = ?`,
