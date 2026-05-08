@@ -276,9 +276,6 @@ function MainPage() {
                       <>
                         <span className="menu-card__price-old">{formatEuro(priceCents)}</span>
                         <span className="menu-card__price-discount">{formatEuro(discountedCents)}</span>
-                        <span className="menu-card__price-save">
-                          {isEnglish ? 'Save' : 'Säästät'} {formatEuro(priceCents - discountedCents)}
-                        </span>
                       </>
                     ) : (
                       <span className="menu-card__price-normal">{formatEuro(priceCents)}</span>
