@@ -1,6 +1,6 @@
 import {useEffect} from 'react';
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Routes,
   Route,
   useLocation,
@@ -58,7 +58,7 @@ function App() {
         <OfferProvider>
           <MenuDataProvider>
             <CartProvider>
-              <Router basename={import.meta.env.BASE_URL}>
+              <Router>
                 <RouteUiEffects />
                 <OfferBanner />
                 <Routes>
