@@ -1,7 +1,11 @@
 ﻿# Pizzeria Pro
 
-Linkki (Demo): https://users.metropolia.fi/~aarohaa/Demo/
-Tuleva linkki: https://users.metropolia.fi/~aarohaa/Slice_Hunt/
+Nykyinen linkki: https://users.metropolia.fi/~aarohaa/Slice_Hunt/
+Vanha demo: https://users.metropolia.fi/~aarohaa/Demo/
+
+# For testing admin functions
+Admins Email = admin@gmail.com
+Admins Password = 123456
 
 ## Project Idea and Target Audience
 Pizzeria Pro is a restaurant web application for browsing menu items, placing pickup orders, and managing restaurant content.
