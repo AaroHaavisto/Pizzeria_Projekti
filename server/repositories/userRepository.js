@@ -35,10 +35,13 @@ function splitName(name) {
 export async function registerCustomerAccount({name, email, password}) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedName = String(name || '').trim();
+  const {firstName, lastName} = splitName(normalizedName);
 
   const connection = await pool.getConnection();
 
   try {
+    await connection.beginTransaction();
+
     const usersColumns = await getTableColumns(connection, 'users');
 
     if (usersColumns.length === 0) {
@@ -47,7 +50,10 @@ export async function registerCustomerAccount({name, email, password}) {
 
     const userIdColumn = pickFirstExisting(usersColumns, ['id', 'user_id']);
     const emailColumn = pickFirstExisting(usersColumns, ['email']);
-    const passwordColumn = pickFirstExisting(usersColumns, ['password', 'password_hash']);
+    const passwordColumn = pickFirstExisting(usersColumns, [
+      'password',
+      'password_hash',
+    ]);
 
     if (!emailColumn || !passwordColumn) {
       throw new Error('users table missing email/password');
@@ -95,18 +101,29 @@ export async function registerCustomerAccount({name, email, password}) {
     const insert = buildInsertQuery('users', payload);
     const [result] = await connection.query(insert.sql, insert.values);
 
-    const userId =
-      payload[userIdColumn] ??
-      result.insertId ??
-      null;
+    const userId = payload[userIdColumn] ?? result.insertId ?? null;
+
+    if (userId) {
+      await connection.query(
+        `INSERT INTO customer_profiles (
+          user_id,
+          first_name,
+          last_name,
+          phone
+        ) VALUES (?, ?, ?, ?)`,
+        [userId, firstName, lastName, null]
+      );
+    }
+
+    await connection.commit();
 
     return {
       id: userId,
       name: normalizedName,
       email: normalizedEmail,
     };
-
   } catch (error) {
+    await connection.rollback();
     throw error;
   } finally {
     connection.release();
