@@ -7,17 +7,55 @@ import '../css/main_style.css';
 
 const BANNER_STORAGE_KEY = 'pizzeria-offer-banner-dismissed';
 
+function getOfferSignature(offer) {
+  return [
+    offer?.label || '',
+    offer?.title || '',
+    offer?.discountPercent || 0,
+    offer?.startTime || '',
+    offer?.endTime || '',
+  ].join('|');
+}
+
+function getDismissalExpiry() {
+  const expiry = new Date();
+  expiry.setHours(23, 59, 59, 999);
+  return expiry.getTime();
+}
+
+function readDismissalState(offer) {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const signature = getOfferSignature(offer);
+  const rawValue = window.localStorage.getItem(BANNER_STORAGE_KEY);
+
+  if (!rawValue) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+
+    if (parsed.signature !== signature || Number(parsed.expiresAt) <= Date.now()) {
+      window.localStorage.removeItem(BANNER_STORAGE_KEY);
+      return false;
+    }
+
+    return true;
+  } catch {
+    window.localStorage.removeItem(BANNER_STORAGE_KEY);
+    return false;
+  }
+}
+
 function OfferBanner() {
   const {offer} = useOffer();
   const {language} = useLanguage();
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.localStorage.getItem(BANNER_STORAGE_KEY) === '1';
-  });
+  const offerSignature = getOfferSignature(offer);
+  const [dismissed, setDismissed] = useState(() => readDismissalState(offer));
   const isEnglish = language === 'en';
   const now = new Date();
   const active = isLunchOfferActive(now, offer);
@@ -25,9 +63,19 @@ function OfferBanner() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(BANNER_STORAGE_KEY, dismissed ? '1' : '0');
+      if (dismissed) {
+        window.localStorage.setItem(
+          BANNER_STORAGE_KEY,
+          JSON.stringify({
+            signature: offerSignature,
+            expiresAt: getDismissalExpiry(),
+          })
+        );
+      } else {
+        window.localStorage.removeItem(BANNER_STORAGE_KEY);
+      }
     }
-  }, [dismissed]);
+  }, [dismissed, offerSignature]);
 
   function timeLabel() {
     if (active) {

@@ -4,7 +4,9 @@ import {pool} from '../db/pool.js';
  * @typedef {Object} MenuItem
  * @property {string} itemId
  * @property {string} name
+ * @property {string|null} nameEn
  * @property {string|null} description
+ * @property {string|null} descriptionEn
  * @property {number} priceCents
  * @property {string} currency
  * @property {string[]} diet
@@ -12,6 +14,21 @@ import {pool} from '../db/pool.js';
  * @property {string|null} image
  * @property {boolean} featured
  */
+
+const MENU_ITEM_SELECT_COLUMNS = `
+  menu_item_id,
+  name,
+  name_en,
+  description,
+  description_en,
+  price,
+  category,
+  dietary_info,
+  is_lunch_item,
+  available_weekday,
+  image,
+  featured
+`;
 
 /**
  * Internal: choose a default image for a menu item when none provided.
@@ -21,12 +38,8 @@ import {pool} from '../db/pool.js';
 function getDefaultMenuImage(item) {
   const customImage = String(item?.image || '').trim();
 
-  if (customImage) return customImage;
-
-  const numericId = Number(item?.itemId);
-
-  if (Number.isInteger(numericId) && MENU_IMAGE_BY_ID[numericId]) {
-    return MENU_IMAGE_BY_ID[numericId];
+  if (customImage) {
+    return customImage;
   }
 
   return item?.image || null;
@@ -60,20 +73,22 @@ function mapRowToItem(row) {
     ? Math.round(priceValue < 100 ? priceValue * 100 : priceValue)
     : 0;
 
-  return {
-    itemId: String(row.menu_item_id ?? row.item_id),
-    name: row.name,
-    description: row.description,
-    priceCents,
-    currency: row.currency || 'EUR',
-    diet: String(row.dietary_info || '')
-      .split(',')
-      .map(entry => entry.trim())
-      .filter(Boolean),
-    mealType: Number(row.is_lunch_item) === 1 ? 'lunch' : 'a_la_carte',
-    image: row.image || null,
-    featured: Number(row.featured) === 1,
-  };
+return {
+  itemId: String(row.menu_item_id ?? row.item_id),
+  name: row.name,
+  nameEn: row.name_en || null,
+  description: row.description,
+  descriptionEn: row.description_en || null,
+  priceCents,
+  currency: row.currency || 'EUR',
+  diet: String(row.dietary_info || '')
+    .split(',')
+    .map(entry => entry.trim())
+    .filter(Boolean),
+  mealType: Number(row.is_lunch_item) === 1 ? 'lunch' : 'a_la_carte',
+  image: row.image || null,
+  featured: Number(row.featured) === 1,
+};
 }
 
 /**
@@ -83,7 +98,7 @@ function mapRowToItem(row) {
  */
 export async function getAllMenuItems() {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
+    `SELECT ${MENU_ITEM_SELECT_COLUMNS}
      FROM menu_items
      ORDER BY menu_item_id ASC`
   );
@@ -92,13 +107,13 @@ export async function getAllMenuItems() {
 }
 
 /**
- * Fetch featured menu items (where `featured = 1`).
+ * Fetch featured menu items where `featured = 1`.
  * @async
  * @returns {Promise<MenuItem[]>}
  */
 export async function getFeaturedMenuItems() {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
+    `SELECT ${MENU_ITEM_SELECT_COLUMNS}
      FROM menu_items
      WHERE featured = 1
      ORDER BY menu_item_id ASC`
@@ -115,7 +130,7 @@ export async function getFeaturedMenuItems() {
  */
 export async function getMenuItemById(itemId) {
   const [rows] = await pool.query(
-    `SELECT menu_item_id, name, description, price, category, dietary_info, is_lunch_item, available_weekday, image, featured
+    `SELECT ${MENU_ITEM_SELECT_COLUMNS}
      FROM menu_items
      WHERE menu_item_id = ?
      LIMIT 1`,
@@ -130,7 +145,7 @@ export async function getMenuItemById(itemId) {
 }
 
 /**
- * Insert or update a menu item. If `item.itemId` is provided and exists
+ * Insert or update a menu item. If `item.itemId` is provided and exists,
  * the row is updated; otherwise a new row is inserted.
  * @async
  * @param {Partial<MenuItem> & {itemId?: string|number}} item
@@ -153,7 +168,9 @@ export async function upsertMenuItem(item) {
       await pool.query(
         `UPDATE menu_items
          SET name = ?,
+             name_en = ?,
              description = ?,
+             description_en = ?,
              price = ?,
              category = ?,
              dietary_info = ?,
@@ -164,7 +181,9 @@ export async function upsertMenuItem(item) {
          WHERE menu_item_id = ?`,
         [
           item.name,
+          item.nameEn ?? item.name_en ?? null,
           item.description ?? null,
+          item.descriptionEn ?? item.description_en ?? null,
           priceValue,
           item.category || 'pizza',
           dietaryInfo || null,
@@ -183,7 +202,9 @@ export async function upsertMenuItem(item) {
   await pool.query(
     `INSERT INTO menu_items (
       name,
+      name_en,
       description,
+      description_en,
       price,
       category,
       dietary_info,
@@ -191,10 +212,12 @@ export async function upsertMenuItem(item) {
       available_weekday,
       image,
       featured
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       item.name,
+      item.nameEn ?? item.name_en ?? null,
       item.description ?? null,
+      item.descriptionEn ?? item.description_en ?? null,
       priceValue,
       item.category || 'pizza',
       dietaryInfo || null,

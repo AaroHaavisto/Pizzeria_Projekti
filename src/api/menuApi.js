@@ -31,18 +31,20 @@ function toCardItem(menuItem) {
         ? 'Lounas'
         : 'A la carte';
 
-  return {
-    id: menuItem.itemId,
-    name: menuItem.name,
-    description: menuItem.description || '',
-    tag: diets,
-    price: formatPrice(menuItem.priceCents, menuItem.currency),
-    priceCents: menuItem.priceCents,
-    currency: menuItem.currency,
-    diet: Array.isArray(menuItem.diet) ? menuItem.diet : [],
-    mealType: menuItem.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
-    image: resolveImageUrl(menuItem.image || '/src/assets/images/pizza-margherita.jpg'),
-  };
+return {
+  id: menuItem.itemId,
+  name: menuItem.name,
+  nameEn: menuItem.nameEn || menuItem.name_en || '',
+  description: menuItem.description || '',
+  descriptionEn: menuItem.descriptionEn || menuItem.description_en || '',
+  tag: diets,
+  price: formatPrice(menuItem.priceCents, menuItem.currency),
+  priceCents: menuItem.priceCents,
+  currency: menuItem.currency,
+  diet: Array.isArray(menuItem.diet) ? menuItem.diet : [],
+  mealType: menuItem.mealType === 'lunch' ? 'lunch' : 'a_la_carte',
+  image: resolveImageUrl(menuItem.image || '/src/assets/images/pizza-margherita.jpg'),
+};
 }
 
 /**
