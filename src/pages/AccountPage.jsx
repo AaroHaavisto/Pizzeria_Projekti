@@ -189,7 +189,7 @@ function AccountPage() {
       <header className="hero hero--account">
         <Navigation />
 
-        <section className="hero__content account-hero" id="kirjautuminen">
+        <section className="hero__content account-hero">
           <p className="eyebrow">{isEnglish ? 'Account' : 'Asiakastili'}</p>
           <h1>{title}</h1>
         </section>
