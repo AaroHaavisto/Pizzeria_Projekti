@@ -46,6 +46,8 @@ function flattenMenuItems(menuData) {
 function createEditableItem(item) {
   return {
     ...item,
+    nameEn: String(item?.nameEn || item?.name_en || ''),
+    descriptionEn: String(item?.descriptionEn || item?.description_en || ''),
     dietText: Array.isArray(item.diet) ? item.diet.join(', ') : '',
     image: item.image || IMAGE_OPTIONS[0].value,
     featured: Boolean(item.featured),
@@ -61,7 +63,9 @@ function toSavedItem(item) {
   return {
     itemId: String(item.itemId).trim(),
     name: String(item.name || '').trim(),
+    nameEn: String(item.nameEn || '').trim(),
     description: String(item.description || '').trim(),
+    descriptionEn: String(item.descriptionEn || '').trim(),
     priceCents: Number.isFinite(Number(item.priceCents))
       ? Math.max(0, Math.round(Number(item.priceCents)))
       : 0,
@@ -79,7 +83,9 @@ function createNewPizza() {
   return {
     itemId: `pizza-${timestamp}`,
     name: 'Uusi pizza',
+    nameEn: 'New pizza',
     description: 'Kirjoita pizzan kuvaus tähän.',
+    descriptionEn: 'Write the pizza description here.',
     priceCents: 1200,
     currency: 'EUR',
     diet: [],
@@ -166,6 +172,16 @@ function AdminPage() {
   useEffect(() => {
     setOfferForm(createOfferForm(offer));
   }, [offer]);
+
+  function displayName(item) {
+    if (!item) return '';
+    return isEnglish ? (item.nameEn || item.name || '') : (item.name || '');
+  }
+
+  function displayDescription(item) {
+    if (!item) return '';
+    return isEnglish ? (item.descriptionEn || item.description || '') : (item.description || '');
+  }
 
   useEffect(() => {
     async function loadRatings() {
@@ -511,7 +527,7 @@ function AdminPage() {
 
           {isAdminCustomer(customer) ? (
             <p className="hero__text admin-hero__text">
-              Admin-käyttäjä: {customer?.email || 'admin'}
+              {t('Admin-käyttäjä', 'Admin user')}: {customer?.email || 'admin'}
             </p>
           ) : null}
 
@@ -538,14 +554,19 @@ function AdminPage() {
       <main className="admin-layout">
         <section className="admin-panel">
           <div className="section__heading">
-            <p className="section__label">Pizzat</p>
-            <h2>Kaikki pizzat</h2>
+            <p className="section__label">{t('Pizzat', 'Pizzas')}</p>
+            <h2>{t('Kaikki pizzat', 'All pizzas')}</h2>
           </div>
 
           <div className="admin-preview">
             <article className="admin-preview__day">
               <div className="admin-preview__head">
-                <strong>{menuStats.itemCount} pizzaa</strong>
+                <strong>
+                  {menuStats.itemCount}{' '}
+                  {menuStats.itemCount === 1
+                    ? t('pizza', 'pizza')
+                    : t('pizzaa', 'pizzas')}
+                </strong>
               </div>
 
               <ul>
@@ -562,22 +583,22 @@ function AdminPage() {
                     }}
                   >
                     <span>
-                      <strong>{item.name}</strong>
+                      <strong>{displayName(item)}</strong>
                       <br />
                       <small>
                         {item.itemId} · {formatEuro(item.priceCents)} ·{' '}
-                        {item.mealType === 'lunch' ? 'Lounas' : (isEnglish ? 'A la carte' : 'À la carte')}
+                        {item.mealType === 'lunch' ? t('Lounas', 'Lunch') : t('À la carte', 'A la carte')}
                       </small>
                     </span>
 
-                    {item.featured ? <span>Etusivulla</span> : <span />}
+                    {item.featured ? <span>{t('Etusivulla', 'Featured')}</span> : <span />}
 
                     <button
                       className="button button--secondary"
                       type="button"
                       onClick={() => openEditPizza(item)}
                     >
-                      Muokkaa
+                      {t('Muokkaa', 'Edit')}
                     </button>
 
                     <button
@@ -585,7 +606,7 @@ function AdminPage() {
                       type="button"
                       onClick={() => handleDeletePizza(item.itemId)}
                     >
-                      Poista
+                      {t('Poista', 'Delete')}
                     </button>
                   </li>
                 ))}
@@ -599,7 +620,7 @@ function AdminPage() {
               type="button"
               onClick={openCreatePizza}
             >
-              Luo uusi pizza
+              {t('Luo uusi pizza', 'Create new pizza')}
             </button>
 
             <button
@@ -607,7 +628,7 @@ function AdminPage() {
               type="button"
               onClick={handleExport}
             >
-              Vie nykyinen data
+              {t('Vie nykyinen data', 'Export current data')}
             </button>
 
             <button
@@ -615,21 +636,21 @@ function AdminPage() {
               type="button"
               onClick={handleSaveMenu}
             >
-              Tallenna pizzamuutokset
+              {t('Tallenna pizzamuutokset', 'Save menu changes')}
             </button>
           </div>
         </section>
 
         <section className="admin-panel">
           <div className="section__heading">
-            <p className="section__label">Lounastarjous</p>
-            <h2>Muokkaa lounastarjousta</h2>
+            <p className="section__label">{t('Lounastarjous', 'Lunch offer')}</p>
+            <h2>{t('Muokkaa lounastarjousta', 'Edit lunch offer')}</h2>
           </div>
 
           <div className="menu-editor__fields">
             <div className="menu-editor__grid">
               <label className="menu-editor__field">
-                <span>Nimi</span>
+                <span>{t('Nimi', 'Name')}</span>
                 <input
                   type="text"
                   value={offerForm.label}
@@ -643,7 +664,7 @@ function AdminPage() {
               </label>
 
               <label className="menu-editor__field">
-                <span>Otsikko</span>
+                <span>{t('Otsikko', 'Title')}</span>
                 <input
                   type="text"
                   value={offerForm.title}
@@ -657,7 +678,7 @@ function AdminPage() {
               </label>
 
               <label className="menu-editor__field">
-                <span>Alennusprosentti</span>
+                <span>{t('Alennusprosentti', 'Discount percent')}</span>
                 <input
                   type="number"
                   min="0"
@@ -674,7 +695,7 @@ function AdminPage() {
               </label>
 
               <label className="menu-editor__field">
-                <span>Alkaa</span>
+                <span>{t('Alkaa', 'Starts')}</span>
                 <input
                   type="time"
                   value={offerForm.startTime}
@@ -688,7 +709,7 @@ function AdminPage() {
               </label>
 
               <label className="menu-editor__field">
-                <span>Päättyy</span>
+                <span>{t('Päättyy', 'Ends')}</span>
                 <input
                   type="time"
                   value={offerForm.endTime}
@@ -703,7 +724,7 @@ function AdminPage() {
             </div>
 
             <label className="menu-editor__field">
-              <span>Teksti, kun tarjous on voimassa</span>
+              <span>{t('Teksti, kun tarjous on voimassa', 'Text when offer is active')}</span>
               <textarea
                 rows="3"
                 value={offerForm.activeText}
@@ -717,7 +738,7 @@ function AdminPage() {
             </label>
 
             <label className="menu-editor__field">
-              <span>Teksti, kun tarjous ei ole voimassa</span>
+              <span>{t('Teksti, kun tarjous ei ole voimassa', 'Text when offer is inactive')}</span>
               <textarea
                 rows="3"
                 value={offerForm.inactiveText}
@@ -738,7 +759,7 @@ function AdminPage() {
               onClick={handleSaveOffer}
               disabled={isSavingOffer}
             >
-              {isSavingOffer ? 'Tallennetaan...' : 'Tallenna lounastarjous'}
+              {isSavingOffer ? t('Tallennetaan...', 'Saving...') : t('Tallenna lounastarjous', 'Save lunch offer')}
             </button>
           </div>
         </section>
@@ -746,10 +767,13 @@ function AdminPage() {
         <section className="admin-panel admin-panel--ratings">
           <div className="section__heading ratings-admin__heading">
             <div>
-              <p className="section__label">Arvosanat</p>
-              <h2>Etusivun arvosanat</h2>
+              <p className="section__label">{t('Arvosanat', 'Ratings')}</p>
+              <h2>{t('Etusivun arvosanat', 'Front page ratings')}</h2>
               <p className="ratings-admin__intro">
-                Päivitä etusivulla näkyvät arvosanat ja niiden lyhyet kuvaukset.
+                {t(
+                  'Tässä voit muuttaa etusivulla näkyviä arvosanoja. Arvosanat tallennetaan suoraan tietokantaan, eikä niillä ole erillistä tallennusnappia kuten pizzamuutoksilla tai lounastarjouksella.',
+                  'Here you can edit the ratings shown on the front page. Ratings are saved directly to the database and do not have a separate save button like menu changes or the lunch offer.'
+                )}
               </p>
             </div>
           </div>
@@ -780,13 +804,13 @@ function AdminPage() {
                       </strong>
 
                       <p className="ratings-admin__description-preview">
-                        {draft.description || 'Ei kuvausta'}
+                        {draft.description || t('Ei kuvausta', 'No description')}
                       </p>
                     </div>
 
                     <div className="ratings-admin__form">
                       <label className="menu-editor__field">
-                        <span>Pisteet</span>
+                              <span>{t('Pisteet', 'Score')}</span>
                         <input
                           type="text"
                           value={draft.score}
@@ -797,12 +821,12 @@ function AdminPage() {
                               event.target.value
                             )
                           }
-                          placeholder="esim. 4.8/5"
+                          placeholder={t('esim. 4.8/5', 'e.g. 4.8/5')}
                         />
                       </label>
 
                       <label className="menu-editor__field">
-                        <span>Kuvaus</span>
+                        <span>{t('Kuvaus', 'Description')}</span>
                         <input
                           type="text"
                           value={draft.description}
@@ -813,7 +837,7 @@ function AdminPage() {
                               event.target.value
                             )
                           }
-                          placeholder="esim. Asiakkaiden suosikki"
+                          placeholder={t('esim. Asiakkaiden suosikki', 'e.g. Customer favorite')}
                         />
                       </label>
 
@@ -825,8 +849,8 @@ function AdminPage() {
                           disabled={savingRatingId === rating.id}
                         >
                           {savingRatingId === rating.id
-                            ? 'Tallennetaan...'
-                            : 'Tallenna'}
+                            ? t('Tallennetaan...', 'Saving...')
+                            : t('Tallenna', 'Save')}
                         </button>
                       </div>
                     </div>
@@ -838,12 +862,13 @@ function AdminPage() {
         </section>
 
         <aside className="admin-panel admin-panel--summary">
-          <p className="section__label">Yhteenveto</p>
+          <p className="section__label">{t('Yhteenveto', 'Summary')}</p>
           <h2>{menuStats.itemCount} tuotetta</h2>
           <p>
-            Pizzamuutokset tallennetaan tietokantaan erillisellä
-            tallennusnapilla. Lounastarjous ja arvosanat tallennetaan omista
-            napeistaan.
+            {t(
+              'Pizzamuutokset tallennetaan tietokantaan erillisellä tallennusnapilla. Lounastarjous ja arvosanat tallennetaan omista napeistaan.',
+              'Menu changes are saved to the database using a separate save button. The lunch offer and ratings have their own save buttons.'
+            )}
           </p>
         </aside>
 
@@ -863,7 +888,9 @@ function AdminPage() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={isCreateMode ? 'Luo uusi pizza' : 'Muokkaa pizzaa'}
+          aria-label={isCreateMode
+                    ? t('Uusi pizza', 'New pizza')
+                    : t('Muokkaa pizzaa', 'Edit pizza')}
           style={{
             position: 'fixed',
             inset: 0,
@@ -885,9 +912,9 @@ function AdminPage() {
           >
             <div className="section__heading">
               <p className="section__label">
-                {isCreateMode ? 'Uusi pizza' : 'Muokkaa pizzaa'}
+                {isCreateMode ? t('Uusi pizza', 'New pizza') : t('Muokkaa pizzaa', 'Edit pizza')}
               </p>
-              <h2>{editingItem.name || 'Pizza'}</h2>
+              <h2>{displayName(editingItem) || (isEnglish ? 'Pizza' : 'Pizza')}</h2>
             </div>
 
             <div className="menu-editor__item">
@@ -898,11 +925,11 @@ function AdminPage() {
                     editingItem.image ||
                       '/src/assets/images/pizza-margherita.jpg'
                   )}
-                  alt={editingItem.name || 'Pizza'}
+                  alt={displayName(editingItem) || (isEnglish ? 'Pizza' : 'Pizza')}
                 />
 
                 <label className="menu-editor__field">
-                  <span>Kuvan valinta</span>
+                  <span>{t('Kuvan valinta', 'Image selection')}</span>
                   <select
                     value={editingItem.image}
                     onChange={event =>
@@ -934,14 +961,14 @@ function AdminPage() {
                       marginTop: '20px',
                     }}
                   />
-                  <span>Näytä etusivulla</span>
+                  <span>{t('Näytä etusivulla', 'Show on front page')}</span>
                 </label>
               </div>
 
               <div className="menu-editor__fields">
                 <div className="menu-editor__grid">
                   <label className="menu-editor__field">
-                    <span>Tunnus</span>
+                    <span>{t('Tunnus', 'ID')}</span>
                     <input
                       type="text"
                       value={editingItem.itemId}
@@ -952,18 +979,7 @@ function AdminPage() {
                   </label>
 
                   <label className="menu-editor__field">
-                    <span>Nimi</span>
-                    <input
-                      type="text"
-                      value={editingItem.name}
-                      onChange={event =>
-                        updateEditingItem('name', event.target.value)
-                      }
-                    />
-                  </label>
-
-                  <label className="menu-editor__field">
-                    <span>Hinta (€)</span>
+                    <span>{t('Hinta (€)', 'Price (€)')}</span>
                     <input
                       type="number"
                       min="0"
@@ -982,7 +998,7 @@ function AdminPage() {
                   </label>
 
                   <label className="menu-editor__field">
-                    <span>Ryhmä</span>
+                    <span>{t('Ryhmä', 'Group')}</span>
                     <select
                       value={editingItem.mealType}
                       onChange={event =>
@@ -1000,20 +1016,57 @@ function AdminPage() {
                   </label>
                 </div>
 
-                <label className="menu-editor__field">
-                  <span>Kuvaus</span>
-                  <textarea
-                    rows="3"
-                    value={editingItem.description}
-                    onChange={event =>
-                      updateEditingItem('description', event.target.value)
-                    }
-                  />
-                </label>
+                <div className="menu-editor__grid">
+                  <label className="menu-editor__field">
+                    <span>{isEnglish ? 'Name (EN)' : 'Nimi'}</span>
+                    <input
+                      type="text"
+                      value={isEnglish ? (editingItem.nameEn || editingItem.name || '') : (editingItem.name || '')}
+                      onChange={event =>
+                        updateEditingItem(isEnglish ? 'nameEn' : 'name', event.target.value)
+                      }
+                    />
+                  </label>
+
+                  <label className="menu-editor__field">
+                    <span>{isEnglish ? 'Name (FI)' : 'Name (EN)'}</span>
+                    <input
+                      type="text"
+                      value={isEnglish ? (editingItem.name || '') : (editingItem.nameEn || '')}
+                      onChange={event =>
+                        updateEditingItem(isEnglish ? 'name' : 'nameEn', event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
+
+                <div className="menu-editor__grid">
+                  <label className="menu-editor__field">
+                    <span>{isEnglish ? 'Description (EN)' : 'Kuvaus'}</span>
+                    <textarea
+                      rows="3"
+                      value={isEnglish ? (editingItem.descriptionEn || editingItem.description || '') : (editingItem.description || '')}
+                      onChange={event =>
+                        updateEditingItem(isEnglish ? 'descriptionEn' : 'description', event.target.value)
+                      }
+                    />
+                  </label>
+
+                  <label className="menu-editor__field">
+                    <span>{isEnglish ? 'Description (FI)' : 'Description (EN)'}</span>
+                    <textarea
+                      rows="3"
+                      value={isEnglish ? (editingItem.description || '') : (editingItem.descriptionEn || '')}
+                      onChange={event =>
+                        updateEditingItem(isEnglish ? 'description' : 'descriptionEn', event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
 
                 <div className="menu-editor__grid menu-editor__grid--compact">
                   <label className="menu-editor__field">
-                    <span>Allergeenit / diet</span>
+                    <span>{t('Allergeenit / diet', 'Allergens / diet')}</span>
                     <input
                       type="text"
                       value={editingItem.dietText}
@@ -1025,7 +1078,7 @@ function AdminPage() {
                   </label>
 
                   <label className="menu-editor__field">
-                    <span>Valuutta</span>
+                    <span>{t('Valuutta', 'Currency')}</span>
                     <input
                       type="text"
                       value={editingItem.currency}
@@ -1036,7 +1089,7 @@ function AdminPage() {
                   </label>
 
                   <label className="menu-editor__field">
-                    <span>Kuvan polku</span>
+                    <span>{t('Kuvan polku', 'Image path')}</span>
                     <input
                       type="text"
                       value={editingItem.image}
@@ -1054,7 +1107,7 @@ function AdminPage() {
                     type="button"
                     onClick={handleSavePizzaFromModal}
                   >
-                    {isCreateMode ? 'Luo pizza' : 'Tallenna pizza'}
+                    {isCreateMode ? t('Luo pizza', 'Create pizza') : t('Tallenna pizza', 'Save pizza')}
                   </button>
 
                   <button
@@ -1062,7 +1115,7 @@ function AdminPage() {
                     type="button"
                     onClick={closePizzaModal}
                   >
-                    Peruuta
+                    {t('Peruuta', 'Cancel')}
                   </button>
                 </div>
               </div>

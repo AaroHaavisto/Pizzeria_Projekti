@@ -248,10 +248,18 @@ function MainPage() {
           </div>
 
           <div className="menu-grid">
-            {menuItems.map(item => {
-              const priceCents = Number(item.priceCents || 0);
-              const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
-              const hasDiscount = offerActive && discountedCents < priceCents;
+          {menuItems.map(item => {
+            const priceCents = Number(item.priceCents || 0);
+            const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
+            const hasDiscount = offerActive && discountedCents < priceCents;
+
+            const displayName =
+              isEnglish && item.nameEn ? item.nameEn : item.name;
+
+            const displayDescription =
+              isEnglish && item.descriptionEn
+                ? item.descriptionEn
+                : item.description;
 
               return (
                 <Link
@@ -259,18 +267,18 @@ function MainPage() {
                   key={item.id || item.name}
                   to={`/menu?focus=${encodeURIComponent(item.id)}#pizza-${encodeURIComponent(item.id)}`}
                   onClick={() => {
-                    addToCart({
+                 addToCart({
                       id: item.id,
-                      name: item.name,
-                      description: item.description,
+                      name: displayName,
+                      description: displayDescription,
                       image: item.image,
                       price: item.price,
                       priceCents: Number(item.priceCents || 0),
                     });
                   }}
                 >
-                  <h3>{item.name}</h3>
-                  <p>{item.description}</p>
+                  <h3>{displayName}</h3>
+                  <p>{displayDescription}</p>
                   <div className="price-row">
                     {hasDiscount ? (
                       <>
