@@ -880,13 +880,13 @@ h1 {
   background: linear-gradient(180deg, rgba(255, 250, 242, 0.98), rgba(255, 247, 240, 0.95));
   backdrop-filter: blur(8px);
   margin: 0 0 20px 0;
-  padding: 12px 0;
+  padding: 12px 16px;
   border-bottom: 1px solid rgba(206, 141, 103, 0.15);
   box-shadow: 0 4px 12px rgba(150, 96, 61, 0.08);
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: center;
   align-items: center;
+  gap: 12px;
 }
 
 .menu-filter-inline__buttons {
@@ -899,6 +899,45 @@ h1 {
 .menu-filter-inline h2 {
   margin: 0;
   text-align: center;
+}
+
+.menu-filter-inline__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 560px);
+  margin: 0;
+  flex: 0 1 560px;
+}
+
+.menu-filter-inline__buy {
+  margin-left: 0;
+  white-space: nowrap;
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 600px) {
+  .menu-filter-inline {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .menu-filter-inline__center {
+    width: 100%;
+    flex: none;
+  }
+
+  .menu-filter-inline__buy {
+    width: 100%;
+    display: block;
+    text-align: center;
+    position: static;
+    transform: none;
+  }
 }
 
 .pizza-card {
@@ -1064,6 +1103,8 @@ h1 {
   overflow: hidden;
   border: 1px solid rgba(206, 141, 103, 0.3);
   box-shadow: 0 12px 28px rgba(79, 45, 31, 0.14);
+  position: relative;
+  z-index: 1;
 }
 
 .location-map__actions {

@@ -184,8 +184,8 @@ function MainPage() {
           </div>
           <p className="hero__text">
             {isEnglish
-              ? 'Crispy base, rich tomato sauce, and the best ingredients. Order pickup, delivery, or eat in.'
-              : 'Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet. Tilaa nouto, kotiinkuljetus tai tule syömään paikan päälle.'}
+              ? 'Crispy base, rich tomato sauce, and the best ingredients.'
+              : 'Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet.'}
           </p>
           <div className="hero__utility-row">
             <div className="hero__control-stack">
@@ -193,17 +193,6 @@ function MainPage() {
                 <Link className="button button--primary" to="/menu">
                   {isEnglish ? 'View menu' : 'Katso menu'}
                 </Link>
-                <Link className="button button--secondary" to="/location">
-                  {isEnglish ? 'Map' : 'Kartta'}
-                </Link>
-              </div>
-              <div className="hero__subactions">
-                <Link className="chip-link" to="/cart">
-                  {isEnglish ? 'Cart' : 'Ostoskori'}
-                </Link>
-                <a className="chip-link" href="#menu">
-                  {isEnglish ? 'Favorites' : 'Suosikit'}
-                </a>
               </div>
             </div>
             <div className="opening-hours-card">

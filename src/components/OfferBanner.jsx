@@ -96,6 +96,19 @@ function OfferBanner() {
     return isEnglish ? `Starts at ${startTime}` : `Alkaa klo ${startTime}`;
   }
 
+  function titleLabel() {
+    if (!isEnglish) {
+      return offer.title;
+    }
+
+    const [endHourText] = String(endTime).split(':');
+    const endHour = Number(endHourText);
+    const normalizedHour = ((endHour % 12) || 12);
+    const period = endHour >= 12 ? 'pm' : 'am';
+
+    return `Cheaper before ${normalizedHour} ${period}`;
+  }
+
   if (dismissed) {
     return null;
   }
@@ -127,7 +140,7 @@ function OfferBanner() {
       <div className="offer-banner__body">
         <strong className="offer-banner__percent">-{Number(offer.discountPercent) || 0}%</strong>
         <div className="offer-banner__text">
-          <div>{isEnglish ? 'Cheaper before 1 pm' : offer.title}</div>
+          <div>{titleLabel()}</div>
           <div>{active ? (isEnglish ? 'Now available' : offer.activeText) : (isEnglish ? 'Coming soon' : offer.inactiveText)}</div>
           <div className="offer-banner__time">{timeLabel()}</div>
         </div>

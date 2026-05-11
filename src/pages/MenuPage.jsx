@@ -193,26 +193,13 @@ function MenuPage() {
           <h1 id="menu">
             {isEnglish
               ? 'Find a favorite pizza for every hunger level.'
-              : 'Löydä suosikkipizza jokaiseen nälkätasoon.'}
+              : 'Löydä suosikkipizza'}
           </h1>
           <p className="hero__text menu-hero-text">
             {isEnglish ? 'Filter pizzas by ingredients.' : 'Suodata pizzat aineiden mukaan.'}
           </p>
 
-          <div className="hero__actions">
-            <Link className="button button--secondary" to="/cart">
-              {isEnglish ? 'Cart' : 'Ostoskori'} {itemCount > 0 ? `(${itemCount})` : ''}
-            </Link>
-          </div>
 
-          <div className="hero__subactions">
-            <Link className="chip-link" to="/">
-              {isEnglish ? 'Home' : 'Etusivu'}
-            </Link>
-            <Link className="chip-link" to="/location">
-              {isEnglish ? 'Map' : 'Kartta'}
-            </Link>
-          </div>
         </section>
       </header>
 
@@ -221,38 +208,45 @@ function MenuPage() {
         {loadError ? <p>{loadError}</p> : null}
 
         <div className="menu-filter-inline">
-          <div className="menu-filter-inline__buttons">
-            <button
-              className={`chip-link chip-link--button${
-                menuFilter === 'veg' ? ' chip-link--button--active' : ''
-              }`}
-              type="button"
-              onClick={() => handleFilterChange('veg')}
-            >
-              {isEnglish ? 'Veg' : 'Vege'}
-            </button>
+          <div className="menu-filter-inline__center">
+            <h2>{filterHeading}</h2>
 
-            <button
-              className={`chip-link chip-link--button${
-                menuFilter === 'meat' ? ' chip-link--button--active' : ''
-              }`}
-              type="button"
-              onClick={() => handleFilterChange('meat')}
-            >
-              {isEnglish ? 'Meat' : 'Liha'}
-            </button>
+            <div className="menu-filter-inline__buttons">
+              <button
+                className={`chip-link chip-link--button${
+                  menuFilter === 'veg' ? ' chip-link--button--active' : ''
+                }`}
+                type="button"
+                onClick={() => handleFilterChange('veg')}
+              >
+                {isEnglish ? 'Veg' : 'Vege'}
+              </button>
 
-            <button
-              className={`chip-link chip-link--button${
-                menuFilter === 'all' ? ' chip-link--button--active' : ''
-              }`}
-              type="button"
-              onClick={() => handleFilterChange('all')}
-            >
-              {isEnglish ? 'All' : 'Kaikki'}
-            </button>
+              <button
+                className={`chip-link chip-link--button${
+                  menuFilter === 'meat' ? ' chip-link--button--active' : ''
+                }`}
+                type="button"
+                onClick={() => handleFilterChange('meat')}
+              >
+                {isEnglish ? 'Meat' : 'Liha'}
+              </button>
+
+              <button
+                className={`chip-link chip-link--button${
+                  menuFilter === 'all' ? ' chip-link--button--active' : ''
+                }`}
+                type="button"
+                onClick={() => handleFilterChange('all')}
+              >
+                {isEnglish ? 'All' : 'Kaikki'}
+              </button>
+            </div>
           </div>
-          <h2>{filterHeading}</h2>
+
+          <Link className="chip-link chip-link--button menu-filter-inline__buy" to="/cart">
+            {isEnglish ? 'Buy' : 'Osta'} {itemCount > 0 ? `(${itemCount})` : ''}
+          </Link>
         </div>
 
         <section className="menu-summary-card">

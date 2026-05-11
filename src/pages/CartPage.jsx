@@ -2,6 +2,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import OrderSuccessModal from '../components/OrderSuccessModal';
+import OrderConfirmationModal from '../components/OrderConfirmationModal';
 import {useCart} from '../contexts/CartContext';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useLanguage} from '../contexts/LanguageContext';
@@ -38,6 +39,8 @@ function CartPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [hoveredItems, setHoveredItems] = useState({});
   const [settledZeroItems, setSettledZeroItems] = useState({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingOrderItems, setPendingOrderItems] = useState(null);
   const zeroTimersRef = useRef(new Map());
   const activeItems = items.filter(item => item.quantity > 0);
   const offerActive = isLunchOfferActive(new Date(), offer);
@@ -145,7 +148,32 @@ function CartPage() {
         return;
       }
 
-      const orderItems = activeItems.map(item => ({
+      // Check if customer exists; if not, show confirmation modal
+      if (!customer) {
+        const orderItems = activeItems.map(item => ({
+          menuItemId: Number(item.id),
+          quantity: item.quantity,
+          unitPrice: Number.isFinite(Number(item.priceCents)) ? Number(item.priceCents) : 0,
+          notes: item.notes || '',
+        }));
+        setPendingOrderItems(orderItems);
+        setShowConfirmation(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      await submitOrderInternal(activeItems);
+    } catch (error) {
+      setErrorMessage(
+        error.message || (isEnglish ? 'Submitting the order failed. Try again.' : 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.')
+      );
+      setIsSubmitting(false);
+    }
+  }
+
+  async function submitOrderInternal(items) {
+    try {
+      const orderItems = items.map(item => ({
         menuItemId: Number(item.id),
         quantity: item.quantity,
         unitPrice: Number.isFinite(Number(item.priceCents)) ? Number(item.priceCents) : 0,
@@ -159,15 +187,28 @@ function CartPage() {
       });
 
       setSuccessOrder(order);
-
       clearCart();
-    } catch (error) {
-      setErrorMessage(
-        error.message || (isEnglish ? 'Submitting the order failed. Try again.' : 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.')
-      );
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleConfirmNoUserOrder() {
+    setShowConfirmation(false);
+    if (pendingOrderItems) {
+      setIsSubmitting(true);
+      submitOrderInternal(activeItems).catch(error => {
+        setErrorMessage(
+          error.message || (isEnglish ? 'Submitting the order failed. Try again.' : 'Tilauksen lähettäminen epäonnistui. Yritä uudelleen.')
+        );
+      });
+      setPendingOrderItems(null);
+    }
+  }
+
+  function handleCancelConfirmation() {
+    setShowConfirmation(false);
+    setPendingOrderItems(null);
   }
 
   return (
@@ -178,27 +219,7 @@ function CartPage() {
         <section className="hero__content cart-hero">
           <p className="eyebrow">{isEnglish ? 'Cart' : 'Ostoskori'}</p>
           <h1>{isEnglish ? 'Check your order before pickup.' : 'Tarkista tilaus ennen noutoa.'}</h1>
-          <p className="hero__text cart-hero__text">
-            {isEnglish
-              ? 'See items, quantities, and the total instantly. Edit the order quickly without extra browsing.'
-              : 'Näet tuotteet, määrät ja kokonaissumman heti. Muokkaa tilausta nopeasti ilman turhaa selailua.'}
-          </p>
-          <div className="hero__actions">
-            <Link className="button button--primary" to="/menu">
-              {isEnglish ? 'Add more items' : 'Lisää tuotteita'}
-            </Link>
-            <Link className="button button--secondary" to="/account">
-              {customer ? (isEnglish ? 'My account' : 'Oma tili') : (isEnglish ? 'Log in' : 'Kirjaudu')}
-            </Link>
-          </div>
-          <div className="hero__subactions">
-            <Link className="chip-link" to="/account">
-              {customer ? (isEnglish ? 'Account details' : 'Tilitiedot') : (isEnglish ? 'Log in' : 'Kirjaudu sisään')}
-            </Link>
-            <Link className="chip-link" to="/">
-              {isEnglish ? 'Home' : 'Etusivulle'}
-            </Link>
-          </div>
+
         </section>
       </header>
 
@@ -350,6 +371,13 @@ function CartPage() {
         <OrderSuccessModal
           order={successOrder}
           onClose={() => setSuccessOrder(null)}
+        />
+
+        <OrderConfirmationModal
+          isOpen={showConfirmation}
+          onConfirm={handleConfirmNoUserOrder}
+          onCancel={handleCancelConfirmation}
+          isEnglish={isEnglish}
         />
       </main>
     </div>
