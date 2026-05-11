@@ -1,21 +1,19 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Link, Navigate} from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import {createFeedback, fetchCustomerFeedback} from '../api/feedbackApi';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useLanguage} from '../contexts/LanguageContext';
-import {createFeedback, fetchCustomerFeedback} from '../api/feedbackApi';
+import '../css/auth_style.css';
 
-/**
- * Feedback page for logged-in customers.
- * Allows customers to submit feedback about the pizzeria.
- * @returns {React.ReactElement} Feedback page JSX
- */
+const RATING_VALUES = [1, 2, 3, 4, 5];
+
 function FeedbackPage() {
   const {customer} = useCustomerSession();
   const {language} = useLanguage();
   const isEnglish = language === 'en';
   const [message, setMessage] = useState('');
-  const [rating, setRating] = useState('5');
+  const [rating, setRating] = useState(5);
   const [savedMessage, setSavedMessage] = useState('');
   const [feedbackItems, setFeedbackItems] = useState([]);
 
@@ -27,94 +25,115 @@ function FeedbackPage() {
             title: 'Share feedback while you are logged in.',
             text: 'Send feedback about the menu, service, or the ordering flow.',
             rating: 'Rating',
-            message: 'Message',
+            ratingDescriptions: {
+              1: 'Not great',
+              2: 'Missing something',
+              3: 'Average',
+              4: 'Good',
+              5: 'Great',
+            },
+            message: 'Anything else to add',
             submit: 'Send feedback',
             saved: 'Feedback saved.',
             history: 'Recent feedback',
             empty: 'No feedback sent yet.',
+            messagePlaceholder: 'Write anything else you would like to share.',
+            back: 'Back to account',
+            starsAria: score => `Rate ${score} out of 5`,
           }
         : {
             eyebrow: 'Palaute',
             title: 'Anna palautetta kirjautuneena.',
             text: 'Voit kommentoida palveluistamme.',
             rating: 'Arvio',
-            message: 'Viesti',
+            ratingDescriptions: {
+              1: 'En tykkää',
+              2: 'Jotain puuttuu',
+              3: 'Keskiverto',
+              4: 'Hyvä',
+              5: 'Mahtava',
+            },
+            message: 'Muuta sanottavaa',
             submit: 'Lähetä palaute',
             saved: 'Palaute tallennettu.',
             history: 'Viimeisimmät palautteet',
             empty: 'Palautetta ei ole vielä lähetetty.',
+            messagePlaceholder: 'Kirjoita tähän muuta sanottavaa.',
+            back: 'Takaisin tilille',
+            starsAria: score => `Arvioi ${score} / 5 tähteä`,
           },
     [isEnglish]
   );
 
+  const ratingDescription = labels.ratingDescriptions[rating] ?? labels.ratingDescriptions[5];
+
   useEffect(() => {
-  if (!customer?.id) {
-    return;
-  }
+    if (!customer?.id) {
+      return;
+    }
 
-  let cancelled = false;
+    let cancelled = false;
 
-  async function loadFeedback() {
-    try {
-      const items = await fetchCustomerFeedback(customer.id);
+    async function loadFeedback() {
+      try {
+        const items = await fetchCustomerFeedback(customer.id);
 
-      if (!cancelled) {
-        setFeedbackItems(items);
-      }
-    } catch {
-      if (!cancelled) {
-        setFeedbackItems([]);
+        if (!cancelled) {
+          setFeedbackItems(items);
+        }
+      } catch {
+        if (!cancelled) {
+          setFeedbackItems([]);
+        }
       }
     }
-  }
 
-  loadFeedback();
+    loadFeedback();
 
-  return () => {
-    cancelled = true;
-  };
-}, [customer?.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [customer?.id]);
 
   if (!customer) {
     return <Navigate to="/account?mode=login#kirjautuminen" replace />;
   }
 
- async function handleSubmit(event) {
-  event.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
 
     const trimmedMessage = message.trim();
 
-  if (!trimmedMessage) {
-    setSavedMessage(
-      isEnglish
-        ? 'Write feedback before sending.'
-        : 'Kirjoita palaute ennen lähettämistä.'
-    );
-    return;
-  }
+    if (!trimmedMessage) {
+      setSavedMessage(
+        isEnglish
+          ? 'Write feedback before sending.'
+          : 'Kirjoita palaute ennen lähettämistä.'
+      );
+      return;
+    }
 
-  try {
-    const savedFeedback = await createFeedback({
-      userId: customer.id,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      rating: Number(rating),
-      message: message.trim(),
-      message: trimmedMessage,
-    });
+    try {
+      const savedFeedback = await createFeedback({
+        userId: customer.id,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        rating,
+        message: trimmedMessage,
+      });
 
-setFeedbackItems(previousItems => [savedFeedback, ...previousItems].slice(0, 10));
-    setMessage('');
-    setRating('5');
-    setSavedMessage(labels.saved);
-  } catch {
-    setSavedMessage(
-      isEnglish
-        ? 'Feedback could not be saved.'
-        : 'Palautteen tallennus epäonnistui.'
-    );
+      setFeedbackItems(previousItems => [savedFeedback, ...previousItems].slice(0, 10));
+      setMessage('');
+      setRating(5);
+      setSavedMessage(labels.saved);
+    } catch {
+      setSavedMessage(
+        isEnglish
+          ? 'Feedback could not be saved.'
+          : 'Palautteen tallennus epäonnistui.'
+      );
+    }
   }
-}
 
   return (
     <div className="account-page">
@@ -129,27 +148,43 @@ setFeedbackItems(previousItems => [savedFeedback, ...previousItems].slice(0, 10)
       </header>
 
       <main className="account-layout">
-        <section className="account-panel account-panel--form account-panel--full">
+        <section className="account-panel account-panel--form account-panel--full feedback-panel">
           <p className="section__label">{customer.name}</p>
           <form className="account-form" onSubmit={handleSubmit}>
-            <label className="field">
+            <label className="field feedback-rating-field">
               <span>{labels.rating}</span>
-              <select className="rating-select" value={rating} onChange={event => setRating(event.target.value)}>
-                <option value="5">5</option>
-                <option value="4">4</option>
-                <option value="3">3</option>
-                <option value="2">2</option>
-                <option value="1">1</option>
-              </select>
+              <div className="rating-stars" role="radiogroup" aria-label={labels.rating}>
+                {RATING_VALUES.map(score => {
+                  const isFilled = score <= rating;
+
+                  return (
+                    <button
+                      key={score}
+                      className={`rating-stars__button ${isFilled ? 'rating-stars__button--filled' : ''}`}
+                      type="button"
+                      onClick={() => setRating(score)}
+                      aria-label={labels.starsAria(score)}
+                      aria-pressed={rating === score}
+                    >
+                      {isFilled ? '★' : '☆'}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="rating-stars__hint">
+                <span>{rating}/5</span>
+                <span>{ratingDescription}</span>
+              </p>
             </label>
 
             <label className="field">
               <span>{labels.message}</span>
               <textarea
-                rows="6"
+                className="feedback-textarea"
+                rows="7"
                 value={message}
                 onChange={event => setMessage(event.target.value)}
-                placeholder={isEnglish ? 'Write your feedback here.' : 'Kirjoita palaute tähän.'}
+                placeholder={labels.messagePlaceholder}
                 required
               />
             </label>
@@ -168,8 +203,12 @@ setFeedbackItems(previousItems => [savedFeedback, ...previousItems].slice(0, 10)
           {feedbackItems.length > 0 ? (
             <ul className="account-dashboard__list">
               {feedbackItems.map(item => (
-                <li key={item.id}>
-                  <strong>{item.rating}/5</strong> {item.message}
+                <li key={item.id} className="feedback-history__item">
+                  <div className="feedback-history__rating">
+                    <strong>{item.rating}/5</strong>
+                    <span>{labels.ratingDescriptions[item.rating] ?? labels.ratingDescriptions[5]}</span>
+                  </div>
+                  <p>{item.message}</p>
                 </li>
               ))}
             </ul>
@@ -177,7 +216,7 @@ setFeedbackItems(previousItems => [savedFeedback, ...previousItems].slice(0, 10)
             <p>{labels.empty}</p>
           )}
           <Link className="button button--secondary" to="/account">
-            {isEnglish ? 'Back to account' : 'Takaisin tilille'}
+            {labels.back}
           </Link>
         </aside>
       </main>
