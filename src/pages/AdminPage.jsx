@@ -5,7 +5,6 @@ import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useLanguage} from '../contexts/LanguageContext';
 import {useMenuData} from '../contexts/MenuDataContext';
 import {useOffer} from '../contexts/OfferContext';
-import {fetchRatings, updateRating} from '../api/ratingsApi';
 import {isAdminCustomer} from '../utils/adminAuth';
 import {isValidMenuJson} from '../utils/menuStore';
 import {resolveImageUrl} from '../utils/imageUrls';
@@ -126,17 +125,6 @@ function toOfferPayload(form) {
   };
 }
 
-function createRatingDrafts(ratings) {
-  return ratings.reduce((drafts, rating) => {
-    drafts[rating.id] = {
-      score: String(rating.score || ''),
-      description: String(rating.description || ''),
-    };
-
-    return drafts;
-  }, {});
-}
-
 function AdminPage() {
   const location = useLocation();
   const {customer} = useCustomerSession();
@@ -160,11 +148,6 @@ function AdminPage() {
   const [offerForm, setOfferForm] = useState(() => createOfferForm(offer));
   const [isSavingOffer, setIsSavingOffer] = useState(false);
 
-  const [ratings, setRatings] = useState([]);
-  const [ratingDrafts, setRatingDrafts] = useState({});
-  const [ratingsLoading, setRatingsLoading] = useState(false);
-  const [savingRatingId, setSavingRatingId] = useState(null);
-
   useEffect(() => {
     setMenuItems(flattenMenuItems(menuData).map(createEditableItem));
   }, [menuData]);
@@ -182,26 +165,6 @@ function AdminPage() {
     if (!item) return '';
     return isEnglish ? (item.descriptionEn || item.description || '') : (item.description || '');
   }
-
-  useEffect(() => {
-    async function loadRatings() {
-      try {
-        setRatingsLoading(true);
-
-        const data = await fetchRatings();
-        const nextRatings = Array.isArray(data) ? data : [];
-
-        setRatings(nextRatings);
-        setRatingDrafts(createRatingDrafts(nextRatings));
-      } catch (error) {
-        console.error('Failed to load ratings:', error);
-      } finally {
-        setRatingsLoading(false);
-      }
-    }
-
-    loadRatings();
-  }, []);
 
   const isDevMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -429,57 +392,6 @@ function AdminPage() {
       });
     } finally {
       setIsSavingOffer(false);
-    }
-  }
-
-  function updateRatingDraft(ratingId, field, value) {
-    setRatingDrafts(previousDrafts => ({
-      ...previousDrafts,
-      [ratingId]: {
-        ...previousDrafts[ratingId],
-        [field]: value,
-      },
-    }));
-  }
-
-  async function handleSaveRating(ratingId) {
-    const draft = ratingDrafts[ratingId];
-
-    if (!draft) {
-      return;
-    }
-
-    try {
-      setSavingRatingId(ratingId);
-
-      const updated = await updateRating(ratingId, {
-        score: draft.score,
-        description: draft.description,
-      });
-
-      const nextRatings = Array.isArray(updated) ? updated : [];
-
-      setRatings(nextRatings);
-      setRatingDrafts(createRatingDrafts(nextRatings));
-
-      setMessage({
-        type: 'success',
-        text: t('Arvosana tallennettu.', 'Rating saved.'),
-      });
-
-      try {
-        window.dispatchEvent(new CustomEvent('ratingsUpdated', {detail: nextRatings}));
-        window.localStorage.setItem('ratingsUpdatedAt', String(Date.now()));
-      } catch {
-        // ignore browser quirks
-      }
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: error.message || t('Arvosanan tallennus epäonnistui.', 'Failed to save rating.'),
-      });
-    } finally {
-      setSavingRatingId(null);
     }
   }
 
@@ -764,110 +676,13 @@ function AdminPage() {
           </div>
         </section>
 
-        <section className="admin-panel admin-panel--ratings">
-          <div className="section__heading ratings-admin__heading">
-            <div>
-              <p className="section__label">{t('Arvosanat', 'Ratings')}</p>
-              <h2>{t('Etusivun arvosanat', 'Front page ratings')}</h2>
-              <p className="ratings-admin__intro">
-                {t(
-                  'Tässä voit muuttaa etusivulla näkyviä arvosanoja. Arvosanat tallennetaan suoraan tietokantaan, eikä niillä ole erillistä tallennusnappia kuten pizzamuutoksilla tai lounastarjouksella.',
-                  'Here you can edit the ratings shown on the front page. Ratings are saved directly to the database and do not have a separate save button like menu changes or the lunch offer.'
-                )}
-              </p>
-            </div>
-          </div>
-
-          {ratingsLoading ? (
-            <div className="ratings-admin__empty">
-              <p>Ladataan arvosanoja...</p>
-            </div>
-          ) : ratings.length === 0 ? (
-            <div className="ratings-admin__empty">
-              <p>Arvosanoja ei löytynyt.</p>
-            </div>
-          ) : (
-            <div className="ratings-admin">
-              {ratings.map(rating => {
-                const draft = ratingDrafts[rating.id] || {
-                  score: String(rating.score || ''),
-                  description: String(rating.description || ''),
-                };
-
-                return (
-                  <article key={rating.id} className="ratings-admin__card">
-                    <div className="ratings-admin__preview">
-                      <span className="ratings-admin__badge">ID {rating.id}</span>
-
-                      <strong className="ratings-admin__score">
-                        {draft.score || '—'}
-                      </strong>
-
-                      <p className="ratings-admin__description-preview">
-                        {draft.description || t('Ei kuvausta', 'No description')}
-                      </p>
-                    </div>
-
-                    <div className="ratings-admin__form">
-                      <label className="menu-editor__field">
-                              <span>{t('Pisteet', 'Score')}</span>
-                        <input
-                          type="text"
-                          value={draft.score}
-                          onChange={event =>
-                            updateRatingDraft(
-                              rating.id,
-                              'score',
-                              event.target.value
-                            )
-                          }
-                          placeholder={t('esim. 4.8/5', 'e.g. 4.8/5')}
-                        />
-                      </label>
-
-                      <label className="menu-editor__field">
-                        <span>{t('Kuvaus', 'Description')}</span>
-                        <input
-                          type="text"
-                          value={draft.description}
-                          onChange={event =>
-                            updateRatingDraft(
-                              rating.id,
-                              'description',
-                              event.target.value
-                            )
-                          }
-                          placeholder={t('esim. Asiakkaiden suosikki', 'e.g. Customer favorite')}
-                        />
-                      </label>
-
-                      <div className="ratings-admin__actions">
-                        <button
-                          className="button button--primary"
-                          type="button"
-                          onClick={() => handleSaveRating(rating.id)}
-                          disabled={savingRatingId === rating.id}
-                        >
-                          {savingRatingId === rating.id
-                            ? t('Tallennetaan...', 'Saving...')
-                            : t('Tallenna', 'Save')}
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
         <aside className="admin-panel admin-panel--summary">
           <p className="section__label">{t('Yhteenveto', 'Summary')}</p>
           <h2>{menuStats.itemCount} tuotetta</h2>
           <p>
             {t(
-              'Pizzamuutokset tallennetaan tietokantaan erillisellä tallennusnapilla. Lounastarjous ja arvosanat tallennetaan omista napeistaan.',
-              'Menu changes are saved to the database using a separate save button. The lunch offer and ratings have their own save buttons.'
+              'Pizzamuutokset tallennetaan tietokantaan erillisellä tallennusnapilla. Lounastarjous tallennetaan omasta napistaan.',
+              'Menu changes are saved to the database using a separate save button. The lunch offer has its own save button.'
             )}
           </p>
         </aside>
