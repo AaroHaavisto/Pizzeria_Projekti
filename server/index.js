@@ -13,6 +13,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import ratingRoutes from './routes/ratingRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -63,6 +64,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ratings', ratingRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api', settingsRoutes);
 

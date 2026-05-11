@@ -1,24 +1,9 @@
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {Link, Navigate} from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import {useCustomerSession} from '../contexts/CustomerSessionContext';
 import {useLanguage} from '../contexts/LanguageContext';
-
-const STORAGE_KEY = 'pizzeria-feedback-items';
-
-/**
- * Reads stored feedback items from localStorage.
- * @returns {Array} Array of feedback items
- */
-function readStoredFeedback() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+import {createFeedback, fetchCustomerFeedback} from '../api/feedbackApi';
 
 /**
  * Feedback page for logged-in customers.
@@ -32,7 +17,7 @@ function FeedbackPage() {
   const [message, setMessage] = useState('');
   const [rating, setRating] = useState('5');
   const [savedMessage, setSavedMessage] = useState('');
-  const [feedbackItems, setFeedbackItems] = useState(() => readStoredFeedback());
+  const [feedbackItems, setFeedbackItems] = useState([]);
 
   const labels = useMemo(
     () =>
@@ -62,29 +47,74 @@ function FeedbackPage() {
     [isEnglish]
   );
 
+  useEffect(() => {
+  if (!customer?.id) {
+    return;
+  }
+
+  let cancelled = false;
+
+  async function loadFeedback() {
+    try {
+      const items = await fetchCustomerFeedback(customer.id);
+
+      if (!cancelled) {
+        setFeedbackItems(items);
+      }
+    } catch {
+      if (!cancelled) {
+        setFeedbackItems([]);
+      }
+    }
+  }
+
+  loadFeedback();
+
+  return () => {
+    cancelled = true;
+  };
+}, [customer?.id]);
+
   if (!customer) {
     return <Navigate to="/account?mode=login#kirjautuminen" replace />;
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
+ async function handleSubmit(event) {
+  event.preventDefault();
 
-    const nextItem = {
-      id: Date.now(),
+    const trimmedMessage = message.trim();
+
+  if (!trimmedMessage) {
+    setSavedMessage(
+      isEnglish
+        ? 'Write feedback before sending.'
+        : 'Kirjoita palaute ennen lähettämistä.'
+    );
+    return;
+  }
+
+  try {
+    const savedFeedback = await createFeedback({
+      userId: customer.id,
       customerName: customer.name,
       customerEmail: customer.email,
       rating: Number(rating),
       message: message.trim(),
-      createdAt: new Date().toISOString(),
-    };
+      message: trimmedMessage,
+    });
 
-    const nextItems = [nextItem, ...feedbackItems].slice(0, 10);
-    setFeedbackItems(nextItems);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextItems));
+setFeedbackItems(previousItems => [savedFeedback, ...previousItems].slice(0, 10));
     setMessage('');
     setRating('5');
     setSavedMessage(labels.saved);
+  } catch {
+    setSavedMessage(
+      isEnglish
+        ? 'Feedback could not be saved.'
+        : 'Palautteen tallennus epäonnistui.'
+    );
   }
+}
 
   return (
     <div className="account-page">
