@@ -151,8 +151,8 @@ function FeedbackPage() {
         <section className="account-panel account-panel--form account-panel--full feedback-panel">
           <p className="section__label">{customer.name}</p>
           <form className="account-form" onSubmit={handleSubmit}>
-            <label className="field feedback-rating-field">
-              <span>{labels.rating}</span>
+            <fieldset className="field feedback-rating-field feedback-rating-fieldset">
+              <legend className="field__legend">{labels.rating}</legend>
               <div className="rating-stars" role="radiogroup" aria-label={labels.rating}>
                 {RATING_VALUES.map(score => {
                   const isFilled = score <= rating;
@@ -175,7 +175,7 @@ function FeedbackPage() {
                 <span>{rating}/5</span>
                 <span>{ratingDescription}</span>
               </p>
-            </label>
+            </fieldset>
 
             <label className="field">
               <span>{labels.message}</span>
