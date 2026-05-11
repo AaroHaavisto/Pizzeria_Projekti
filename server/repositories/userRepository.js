@@ -135,22 +135,18 @@ export async function loginCustomerAccount({email, password}) {
   const connection = await pool.getConnection();
 
   try {
-    const usersColumns = await getTableColumns(connection, 'users');
-
-    const emailColumn = pickFirstExisting(usersColumns, ['email']);
-    const passwordColumn = pickFirstExisting(usersColumns, ['password', 'password_hash']);
-    const idColumn = pickFirstExisting(usersColumns, ['id', 'user_id']);
-    const nameColumn = pickFirstExisting(usersColumns, ['name', 'full_name']);
-    const roleColumn = pickFirstExisting(usersColumns, ['role']);
-
-    const selectCols = [emailColumn, passwordColumn, idColumn, nameColumn, roleColumn]
-      .filter(Boolean)
-      .join(', ');
-
     const [rows] = await connection.query(
-      `SELECT ${selectCols}
-       FROM users
-       WHERE ${emailColumn} = ?
+      `SELECT
+        u.user_id,
+        u.email,
+        u.password_hash,
+        u.role,
+        cp.first_name,
+        cp.last_name
+       FROM users u
+       LEFT JOIN customer_profiles cp
+        ON cp.user_id = u.user_id
+       WHERE u.email = ?
        LIMIT 1`,
       [normalizedEmail]
     );
@@ -159,17 +155,21 @@ export async function loginCustomerAccount({email, password}) {
 
     const user = rows[0];
 
-    const valid = await verifyPassword(password, user[passwordColumn]);
+    const valid = await verifyPassword(password, user.password_hash);
 
     if (!valid) return null;
 
-    return {
-      id: idColumn ? user[idColumn] : null,
-      name: nameColumn ? user[nameColumn] : user[emailColumn],
-      email: user[emailColumn],
-      role: roleColumn ? user[roleColumn] : undefined,
-    };
+    const fullName = [user.first_name, user.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
 
+    return {
+      id: user.user_id,
+      name: fullName || user.email,
+      email: user.email,
+      role: user.role,
+    };
   } finally {
     connection.release();
   }
