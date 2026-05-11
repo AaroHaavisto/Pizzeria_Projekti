@@ -39,3 +39,17 @@ export async function fetchCustomerFeedback(customerId) {
 
   return Array.isArray(payload.feedbackItems) ? payload.feedbackItems : [];
 }
+
+export async function fetchFeedbackSummary() {
+  const response = await fetch(`${API_BASE_URL}/api/feedback/summary`);
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.error?.message || 'Feedback summary could not be loaded.'
+    );
+  }
+
+  return payload.summary;
+}

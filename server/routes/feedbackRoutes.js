@@ -102,4 +102,30 @@ router.get('/customer/:customerId', async (req, res, next) => {
   }
 });
 
+router.get('/summary', async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+        COUNT(*) AS feedback_count,
+        AVG(rating) AS average_rating
+       FROM customer_feedback`
+    );
+
+    const summary = rows[0] || {};
+    const feedbackCount = Number(summary.feedback_count || 0);
+    const averageRating = Number(summary.average_rating || 0);
+
+    res.json({
+      summary: {
+        feedbackCount,
+        averageRating: feedbackCount > 0 ? Number(averageRating.toFixed(1)) : 0,
+        scoreText:
+          feedbackCount > 0 ? `${Number(averageRating.toFixed(1))}/5` : '0/5',
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

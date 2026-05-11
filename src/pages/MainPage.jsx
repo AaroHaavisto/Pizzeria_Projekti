@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
+import {fetchFeedbackSummary} from '../api/feedbackApi';
 import {getFeaturedMenuItems} from '../api/menuApi';
 import {fetchOpeningHours} from '../api/openingHoursApi';
 import Navigation from '../components/Navigation';
@@ -15,9 +16,6 @@ function MainPage() {
   const {offer} = useOffer();
   const offerActive = isLunchOfferActive(new Date(), offer);
 
-  const fallbackRatings = [
-    {id: 1, score: '4.8/5', description: isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'},
-  ];
   const fallbackOpeningHours = {
     label: isEnglish ? 'Opening hours' : 'Aukioloajat',
     title: isEnglish ? 'Pizzeria is open' : 'Pizzeria on auki',
@@ -26,12 +24,14 @@ function MainPage() {
     weekendsLabel: isEnglish ? 'Sat - Sun' : 'La - su',
     weekendsHours: '8.00 - 15.00',
   };
+
   const fallbackMenuItems = isEnglish
     ? [
         {
           id: 'kana-pizza',
           name: 'Chicken pizza',
-          description: 'Chicken, mozzarella, red onion, and house tomato sauce.',
+          description:
+            'Chicken, mozzarella, red onion, and house tomato sauce.',
           price: '12,50 €',
           priceCents: 1250,
           image: '/src/assets/images/pizza-chicken-bbq.jpg',
@@ -97,14 +97,19 @@ function MainPage() {
       ];
 
   const [menuItems, setMenuItems] = useState(fallbackMenuItems);
-  const [ratings, setRatings] = useState(fallbackRatings);
   const [openingHours, setOpeningHours] = useState(fallbackOpeningHours);
+  const [feedbackSummary, setFeedbackSummary] = useState({
+    feedbackCount: 0,
+    averageRating: 0,
+    scoreText: '0/5',
+  });
 
   useEffect(() => {
     let mounted = true;
 
     async function loadOpeningHours() {
       const hours = await fetchOpeningHours();
+
       if (mounted && hours) {
         setOpeningHours(hours);
       }
@@ -120,21 +125,25 @@ function MainPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadRatings() {
+    async function loadFeedbackSummary() {
       try {
-        const base = import.meta.env.VITE_API_BASE_URL || '';
-        const response = await fetch(`${base}/api/ratings`);
-        if (!response.ok) throw new Error('Failed to fetch ratings');
-        const data = await response.json();
-        if (mounted && Array.isArray(data.ratings)) {
-          setRatings(data.ratings);
+        const summary = await fetchFeedbackSummary();
+
+        if (mounted && summary) {
+          setFeedbackSummary(summary);
         }
       } catch {
-        // keep fallback ratings
+        if (mounted) {
+          setFeedbackSummary({
+            feedbackCount: 0,
+            averageRating: 0,
+            scoreText: '0/5',
+          });
+        }
       }
     }
 
-    loadRatings();
+    loadFeedbackSummary();
 
     return () => {
       mounted = false;
@@ -147,6 +156,7 @@ function MainPage() {
     async function loadFeatured() {
       try {
         const featured = await getFeaturedMenuItems();
+
         if (mounted && Array.isArray(featured) && featured.length > 0) {
           setMenuItems(featured);
         }
@@ -162,7 +172,6 @@ function MainPage() {
     };
   }, []);
 
-  const ratingSummary = ratings.length > 0 ? ratings[0] : fallbackRatings[0];
   const displayOpeningHours = isEnglish
     ? {
         ...openingHours,
@@ -179,14 +188,26 @@ function MainPage() {
         <Navigation />
 
         <section className="hero__content" id="etusivu">
-          <div className="hero__title-banner" role="img" aria-label="Tuore pizza puupöydällä">
-            <h1>{isEnglish ? 'Pizza that actually tastes Italian.' : 'Pizzaa, joka maistuu oikeasti italialaiselta.'}</h1>
+          <div
+            className="hero__title-banner"
+            role="img"
+            aria-label={
+              isEnglish ? 'Fresh pizza on a wooden table' : 'Tuore pizza puupöydällä'
+            }
+          >
+            <h1>
+              {isEnglish
+                ? 'Pizza that actually tastes Italian.'
+                : 'Pizzaa, joka maistuu oikeasti italialaiselta.'}
+            </h1>
           </div>
+
           <p className="hero__text">
             {isEnglish
               ? 'Crispy base, rich tomato sauce, and the best ingredients.'
               : 'Rapea pohja, täyteläinen tomaattikastike ja parhaat raaka-aineet.'}
           </p>
+
           <div className="hero__utility-row">
             <div className="hero__control-stack">
               <div className="hero__actions">
@@ -195,12 +216,19 @@ function MainPage() {
                 </Link>
               </div>
             </div>
+
             <div className="opening-hours-card">
               <p className="section__label">{displayOpeningHours.label}</p>
               <h2>{displayOpeningHours.title}</h2>
               <ul>
-                <li>{displayOpeningHours.weekdaysLabel} {displayOpeningHours.weekdaysHours}</li>
-                <li>{displayOpeningHours.weekendsLabel} {displayOpeningHours.weekendsHours}</li>
+                <li>
+                  {displayOpeningHours.weekdaysLabel}{' '}
+                  {displayOpeningHours.weekdaysHours}
+                </li>
+                <li>
+                  {displayOpeningHours.weekendsLabel}{' '}
+                  {displayOpeningHours.weekendsHours}
+                </li>
               </ul>
               <p>
                 <Link className="inline-link" to="/menu?focus=all#menu-pizzat">
@@ -208,16 +236,33 @@ function MainPage() {
                 </Link>
               </p>
             </div>
+
             <div className="rating-summary-card rating-summary-card--featured">
-              <p className="section__label">{isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'}</p>
+              <p className="section__label">
+                {isEnglish ? 'Customer satisfaction' : 'Asiakastyytyväisyys'}
+              </p>
+
               <div className="rating-summary-card__score-row">
-                <h3>{ratingSummary.score}</h3>
-                <span>{isEnglish ? 'Today’s average' : 'Tämän päivän keskiarvo'}</span>
+                <h3>{feedbackSummary.scoreText}</h3>
+                <span>
+                  {feedbackSummary.feedbackCount > 0
+                    ? isEnglish
+                      ? `${feedbackSummary.feedbackCount} feedback messages`
+                      : `${feedbackSummary.feedbackCount} palautetta`
+                    : isEnglish
+                      ? 'No feedback yet'
+                      : 'Ei palautteita vielä'}
+                </span>
               </div>
+
               <p className="rating-summary-card__text">
-                {isEnglish
-                  ? 'Customers appreciate fast service and fresh flavors.'
-                  : 'Asiakkaat arvostavat nopeaa palvelua ja tuoreita makuja.'}
+                {feedbackSummary.feedbackCount > 0
+                  ? isEnglish
+                    ? 'Average rating based on customer feedback.'
+                    : 'Keskiarvo perustuu asiakkaiden palautteisiin.'
+                  : isEnglish
+                    ? 'Be the first to leave feedback.'
+                    : 'Ole ensimmäinen palautteen antaja.'}
               </p>
             </div>
           </div>
@@ -227,7 +272,9 @@ function MainPage() {
       <main>
         <section className="section section--classics" id="menu">
           <div className="section__heading">
-            <p className="section__label">{isEnglish ? 'Featured' : 'Suosituimmat'}</p>
+            <p className="section__label">
+              {isEnglish ? 'Featured' : 'Suosituimmat'}
+            </p>
             <h2>{isEnglish ? 'Ready-made classics' : 'Valmiit klassikot'}</h2>
             <p>
               <Link className="inline-link" to="/menu">
@@ -237,26 +284,32 @@ function MainPage() {
           </div>
 
           <div className="menu-grid">
-          {menuItems.map(item => {
-            const priceCents = Number(item.priceCents || 0);
-            const discountedCents = applyLunchDiscount(priceCents, new Date(), offer);
-            const hasDiscount = offerActive && discountedCents < priceCents;
+            {menuItems.map(item => {
+              const priceCents = Number(item.priceCents || 0);
+              const discountedCents = applyLunchDiscount(
+                priceCents,
+                new Date(),
+                offer
+              );
+              const hasDiscount = offerActive && discountedCents < priceCents;
 
-            const displayName =
-              isEnglish && item.nameEn ? item.nameEn : item.name;
+              const displayName =
+                isEnglish && item.nameEn ? item.nameEn : item.name;
 
-            const displayDescription =
-              isEnglish && item.descriptionEn
-                ? item.descriptionEn
-                : item.description;
+              const displayDescription =
+                isEnglish && item.descriptionEn
+                  ? item.descriptionEn
+                  : item.description;
 
               return (
                 <Link
                   className="menu-card menu-card--clickable"
                   key={item.id || item.name}
-                  to={`/menu?focus=${encodeURIComponent(item.id)}#pizza-${encodeURIComponent(item.id)}`}
+                  to={`/menu?focus=${encodeURIComponent(
+                    item.id
+                  )}#pizza-${encodeURIComponent(item.id)}`}
                   onClick={() => {
-                 addToCart({
+                    addToCart({
                       id: item.id,
                       name: displayName,
                       description: displayDescription,
@@ -268,17 +321,23 @@ function MainPage() {
                 >
                   <h3>{displayName}</h3>
                   <p>{displayDescription}</p>
+
                   <div className="price-row">
                     {hasDiscount ? (
                       <>
-                        <span className="menu-card__price-old">{formatEuro(priceCents)}</span>
-                        <span className="menu-card__price-discount">{formatEuro(discountedCents)}</span>
+                        <span className="menu-card__price-old">
+                          {formatEuro(priceCents)}
+                        </span>
+                        <span className="menu-card__price-discount">
+                          {formatEuro(discountedCents)}
+                        </span>
                       </>
                     ) : (
-                      <span className="menu-card__price-normal">{formatEuro(priceCents)}</span>
+                      <span className="menu-card__price-normal">
+                        {formatEuro(priceCents)}
+                      </span>
                     )}
                   </div>
-                  {/* Removed homepage pizza images to simplify layout */}
                 </Link>
               );
             })}
