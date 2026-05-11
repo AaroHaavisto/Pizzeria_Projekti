@@ -199,20 +199,7 @@ function MenuPage() {
             {isEnglish ? 'Filter pizzas by ingredients.' : 'Suodata pizzat aineiden mukaan.'}
           </p>
 
-          <div className="hero__actions">
-            <Link className="button button--secondary" to="/cart">
-              {isEnglish ? 'Cart' : 'Ostoskori'} {itemCount > 0 ? `(${itemCount})` : ''}
-            </Link>
-          </div>
 
-          <div className="hero__subactions">
-            <Link className="chip-link" to="/">
-              {isEnglish ? 'Home' : 'Etusivu'}
-            </Link>
-            <Link className="chip-link" to="/location">
-              {isEnglish ? 'Map' : 'Kartta'}
-            </Link>
-          </div>
         </section>
       </header>
 

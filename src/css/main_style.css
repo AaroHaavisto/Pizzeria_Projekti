@@ -1103,6 +1103,8 @@ h1 {
   overflow: hidden;
   border: 1px solid rgba(206, 141, 103, 0.3);
   box-shadow: 0 12px 28px rgba(79, 45, 31, 0.14);
+  position: relative;
+  z-index: 1;
 }
 
 .location-map__actions {
